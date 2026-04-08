@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, isLoading: true }));
     try {
       await signInWithPopup(auth, googleProvider);
-      
+
       try {
         const res = await authAPI.login() as LoginResponse;
         setState({ user: res.user, isAuthenticated: true, isLoading: false });
@@ -77,11 +77,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
       }
 
-      await authAPI.signup(payload) as SignupResponse;
-      
-      // 회원가입 완료 후 유저 정보를 조회하여 상태 반영
+      try {
+        await authAPI.signup(payload) as SignupResponse;
+      } catch (signupErr: unknown) {
+        const apiErr = signupErr as ApiError;
+        // 409 = 이미 가입된 유저 → 그냥 로그인으로 넘어감
+        if (apiErr.status !== 409) throw apiErr;
+        console.warn('이미 가입된 유저입니다. 로그인으로 전환합니다.');
+      }
+
+      // 회원가입(또는 이미 가입) 후 유저 정보 조회
       const loginRes = await authAPI.login() as LoginResponse;
-      
       setState({ user: loginRes.user, isAuthenticated: true, isLoading: false });
     } catch (error) {
       console.error("Signup failed:", error);
