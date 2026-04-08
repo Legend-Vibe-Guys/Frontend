@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useAuth } from './AuthContext';
-import { studentsAPI, noticeAPI } from '../api/api';
+import { studentsAPI, noticeAPI, scheduleAPI } from '../api/api';
 import type {
   Child,
   AttendanceRecord,
@@ -21,7 +21,6 @@ import type {
 } from '../types';
 import {
   MOCK_ATTENDANCE,
-  MOCK_SCHEDULES,
   MOCK_OBSERVATIONS,
   MOCK_DASHBOARD_STATS,
   MOCK_ACTIVITY_TIMELINE,
@@ -57,6 +56,9 @@ interface AppDataContextType {
   addObservation: (observation: ObservationLog) => void;
   generateAIObservation: (childId: string, photoFile?: File) => Promise<ObservationLog>;
   toggleScheduleComplete: (scheduleId: string) => void;
+  addSchedule: (schedule: Partial<ScheduleItem>) => Promise<void>;
+  updateSchedule: (id: string, data: Partial<ScheduleItem>) => Promise<void>;
+  deleteSchedule: (id: string) => Promise<void>;
   markNoticeAsRead: (noticeId: string) => Promise<void>;
   updateChild: (id: string, data: Partial<Child>) => Promise<void>;
   updateNotice: (id: string, data: Partial<Notice>) => Promise<void>;
@@ -95,9 +97,10 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
       setIsLoading(true);
       const fetchData = async () => {
         try {
-          const [studentRes, noticeRes] = await Promise.all([
+          const [studentRes, noticeRes, scheduleRes] = await Promise.all([
             studentsAPI.getAll(),
-            noticeAPI.getAll()
+            noticeAPI.getAll(),
+            scheduleAPI.getAll()
           ]);
 
           if (!mounted) return;
@@ -134,9 +137,12 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
             setNotices(sortedNotices);
           }
 
+          if (scheduleRes.success && scheduleRes.schedules) {
+            setSchedules(scheduleRes.schedules);
+          }
+
           // 초기화 (Mock 데이터 기반 항목들 및 통계)
           setAttendance(MOCK_ATTENDANCE);
-          setSchedules(MOCK_SCHEDULES);
           setObservations(MOCK_OBSERVATIONS);
           setActivities(MOCK_ACTIVITY_TIMELINE);
           setMeals(MOCK_MEAL_PLANS);
@@ -340,12 +346,55 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
     [childrenData],
   );
 
-  const toggleScheduleComplete = useCallback((scheduleId: string) => {
-    setSchedules((prev) =>
-      prev.map((s) =>
-        s.id === scheduleId ? { ...s, isCompleted: !s.isCompleted } : s,
-      ),
-    );
+  const toggleScheduleComplete = useCallback(async (scheduleId: string) => {
+    const schedule = schedules.find((s) => s.id === scheduleId);
+    if (!schedule) return;
+
+    const newStatus = !schedule.isCompleted;
+    try {
+      await scheduleAPI.update(scheduleId, { isCompleted: newStatus });
+      setSchedules((prev) =>
+        prev.map((s) =>
+          s.id === scheduleId ? { ...s, isCompleted: newStatus } : s,
+        ),
+      );
+    } catch (error) {
+      console.error("Failed to update schedule status", error);
+    }
+  }, [schedules]);
+
+  const addSchedule = useCallback(async (schedule: Partial<ScheduleItem>) => {
+    try {
+      const res = await scheduleAPI.create(schedule);
+      if (res.success && res.schedule) {
+        setSchedules((prev) => [...prev, res.schedule]);
+      }
+    } catch (error) {
+      console.error("Failed to add schedule", error);
+      throw error;
+    }
+  }, []);
+
+  const updateSchedule = useCallback(async (id: string, data: Partial<ScheduleItem>) => {
+    try {
+      await scheduleAPI.update(id, data);
+      setSchedules((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, ...data } : s))
+      );
+    } catch (error) {
+      console.error("Failed to update schedule", error);
+      throw error;
+    }
+  }, []);
+
+  const deleteSchedule = useCallback(async (id: string) => {
+    try {
+      await scheduleAPI.delete(id);
+      setSchedules((prev) => prev.filter((s) => s.id !== id));
+    } catch (error) {
+      console.error("Failed to delete schedule", error);
+      throw error;
+    }
   }, []);
 
   const markNoticeAsRead = useCallback(async (noticeId: string) => {
@@ -419,6 +468,9 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
         generateAINotice,
         generateAICommonNotice,
         generateBatchNotices,
+        addSchedule,
+        updateSchedule,
+        deleteSchedule,
         addObservation,
         generateAIObservation,
         toggleScheduleComplete,
