@@ -15,6 +15,9 @@ import type {
   DashboardStats,
   ActivityTimeline,
   MealPlan,
+  MonthlyReport,
+  NuriDomain,
+  DomainDetail,
 } from '../types';
 import {
   MOCK_CHILDREN,
@@ -36,6 +39,7 @@ interface AppDataContextType {
   stats: DashboardStats;
   activities: ActivityTimeline[];
   meals: MealPlan[];
+  monthlyReports: MonthlyReport[];
 
   // Actions
   markAttendance: (childId: string, status: AttendanceRecord['status']) => void;
@@ -53,7 +57,10 @@ interface AppDataContextType {
     summaryContext: string
   ) => Promise<Notice[]>;
   addObservation: (observation: ObservationLog) => void;
-  generateAIObservation: (childId: string, photoFile?: File) => Promise<ObservationLog>;
+  generateAIObservation: (childId: string, memo: string, photoFile?: File) => Promise<ObservationLog>;
+  generateMonthlyReport: (childId: string, month: string) => Promise<MonthlyReport>;
+  saveMonthlyReport: (report: MonthlyReport) => void;
+  deleteMonthlyReport: (reportId: string) => void;
   toggleScheduleComplete: (scheduleId: string) => void;
 }
 
@@ -94,6 +101,7 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
   const [stats, setStats] = useState<DashboardStats>(MOCK_DASHBOARD_STATS);
   const [activities] = useState<ActivityTimeline[]>(MOCK_ACTIVITY_TIMELINE);
   const [meals] = useState<MealPlan[]>(MOCK_MEAL_PLANS);
+  const [monthlyReports, setMonthlyReports] = useState<MonthlyReport[]>([]);
 
   const markAttendance = useCallback(
     (childId: string, status: AttendanceRecord['status']) => {
@@ -157,7 +165,6 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
         isRead: false,
         isSent: false,
       };
-      // setNotices 제거: 개별 알림장은 확인 후 전송 버튼에서 수동 등록하도록 UX 개선
       return notice;
     },
     [childrenData],
@@ -200,11 +207,17 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
   }, []);
 
   const generateAIObservation = useCallback(
-    async (childId: string, photoFile?: File): Promise<ObservationLog> => {
-      // Use photoFile to avoid unused var lint error if needed, or remove it from here
+    async (childId: string, memo: string, photoFile?: File): Promise<ObservationLog> => {
       void photoFile;
       await new Promise((r) => setTimeout(r, 1500));
       const child = childrenData.find((c) => c.id === childId);
+      
+      let matchedDomain = '사회관계';
+      if (memo.includes('블록') || memo.includes('그림')) matchedDomain = '예술경험';
+      if (memo.includes('뛰어') || memo.includes('공')) matchedDomain = '신체운동·건강';
+      if (memo.includes('벌레') || memo.includes('관찰')) matchedDomain = '자연탐구';
+      if (memo.includes('말') || memo.includes('단어')) matchedDomain = '의사소통';
+      
       const observation: ObservationLog = {
         id: `obs-${Date.now()}`,
         childId,
@@ -212,33 +225,62 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
         date: new Date().toISOString().split('T')[0],
         categories: [
           {
-            name: '사회관계',
+            name: matchedDomain,
             analysis:
-              '또래와의 상호작용에서 긍정적인 의사소통 능력이 관찰되었습니다.',
-          },
-          {
-            name: '예술경험',
-            analysis:
-              '미술 활동에서 다양한 색상을 활용해 자유로운 표현을 시도했습니다.',
-          },
-          {
-            name: '자연탐구',
-            analysis:
-              '주변 환경에 대한 관심이 높으며, 탐구하는 자세를 보였습니다.',
+              `분석 결과, ${matchedDomain} 영역의 발달이 돋보입니다.`,
           },
         ],
-        content: `${child?.name ?? '아이'}의 활동 사진을 바탕으로 AI가 분석한 관찰일지입니다. 자유놀이 시간에 또래 친구들과 적극적으로 상호작용하며, 사회성 발달이 잘 이루어지고 있는 것으로 관찰됩니다.`,
+        content: `${child?.name ?? '아이'}가 ${memo || '즐겁게 활동하는'} 모습을 관찰하였습니다.`,
+        evaluation: `교사나 친구들과의 상호작용 속에서 자발적인 성장이 이루어지고 있습니다. ${matchedDomain} 영역에서의 발달이 매우 긍정적입니다.`,
         isAIGenerated: true,
       };
-      setObservations((prev) => [observation, ...prev]);
-      setStats((prev) => ({
-        ...prev,
-        observationCompleted: prev.observationCompleted + 1,
-      }));
       return observation;
     },
     [childrenData],
   );
+
+  const generateMonthlyReport = useCallback(
+    async (childId: string, month: string): Promise<MonthlyReport> => {
+      await new Promise((r) => setTimeout(r, 2000));
+      const child = childrenData.find((c) => c.id === childId);
+      const domains: NuriDomain[] = ['신체운동·건강', '의사소통', '사회관계', '예술경험', '자연탐구'];
+      const details: Record<string, DomainDetail> = {};
+
+      domains.forEach(d => {
+        details[d] = {
+          content: `${d} 영역에서의 한 달간 주요 활동 내용입니다.`,
+          evaluation: `${d} 영역에 대한 종합적인 발달 평가 및 향후 지도 계획입니다.`
+        };
+      });
+      
+      const report: MonthlyReport = {
+        id: `mr-${Date.now()}`,
+        childId,
+        childName: child?.name ?? '아이',
+        reportMonth: month,
+        details,
+        isSaved: false,
+      };
+      return report;
+    },
+    [childrenData]
+  );
+  
+  const saveMonthlyReport = useCallback((report: MonthlyReport) => {
+    setMonthlyReports((prev) => {
+      const existingIndex = prev.findIndex(r => r.id === report.id);
+      if (existingIndex >= 0) {
+        const newReports = [...prev];
+        newReports[existingIndex] = { ...report, isSaved: true };
+        return newReports;
+      }
+      return [{ ...report, isSaved: true }, ...prev];
+    });
+  }, []);
+
+  const deleteMonthlyReport = useCallback((reportId: string) => {
+    setMonthlyReports((prev) => prev.filter((r) => r.id !== reportId));
+  }, []);
 
   const toggleScheduleComplete = useCallback((scheduleId: string) => {
     setSchedules((prev) =>
@@ -259,12 +301,16 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
         stats,
         activities,
         meals,
+        monthlyReports,
         markAttendance,
         addNotice,
         generateAINotice,
         generateBatchNotices,
         addObservation,
         generateAIObservation,
+        generateMonthlyReport,
+        saveMonthlyReport,
+        deleteMonthlyReport,
         toggleScheduleComplete,
       }}
     >
