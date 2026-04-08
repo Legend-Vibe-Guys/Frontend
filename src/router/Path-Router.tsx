@@ -17,15 +17,21 @@ import ParentNoticePage from '../pages/parent/ParentNoticePage';
 import LoginPage from '../pages/auth/LoginPage';
 
 import SignupPage from '../pages/auth/SignupPage';
+import AuthLayout from '../components/common/AuthLayout';
 
 const router = createBrowserRouter([
   {
-    path: PATH.LOGIN,
-    element: <LoginPage />,
-  },
-  {
-    path: PATH.SIGNUP,
-    element: <SignupPage />,
+    element: <AuthLayout />,
+    children: [
+      {
+        path: PATH.LOGIN,
+        element: <LoginPage />,
+      },
+      {
+        path: PATH.SIGNUP,
+        element: <SignupPage />,
+      },
+    ],
   },
 
   // 1. 교사 경로 그룹
