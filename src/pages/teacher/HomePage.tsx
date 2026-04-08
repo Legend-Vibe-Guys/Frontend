@@ -1,5 +1,5 @@
 import { useAuth, useAppData } from '../../hooks';
-import { formatDateKorean } from '../../utils/date';
+import { formatDateKorean, formatDateISO } from '../../utils/date';
 import {
   ChevronRight,
   TrendingUp,
@@ -15,7 +15,7 @@ export default function HomePage() {
   const { stats, schedules } = useAppData();
   const navigate = useNavigate();
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatDateISO();
   const todaySchedules = schedules
     .filter((s) => s.date === today)
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
