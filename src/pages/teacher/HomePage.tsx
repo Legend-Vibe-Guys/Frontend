@@ -27,18 +27,18 @@ export default function HomePage() {
         </h2>
       </div>
 
-      {/* Attendance Hero */}
+      {/* Student Management Hero */}
       <div
         className="bg-gradient-to-br from-slate-900 to-[#1a1a2e] p-6 rounded-[2rem] text-white mb-6 cursor-pointer active:scale-[0.98] transition-transform"
         style={{ boxShadow: '0 12px 32px rgba(15,23,42,0.25)' }}
-        onClick={() => navigate(PATH.TEACHER.ATTENDANCE)}
+        onClick={() => navigate(PATH.TEACHER.STUDENTS)}
       >
         <div className="flex justify-between items-start mb-6">
           <div>
-            <p className="text-[10px] font-bold opacity-50 uppercase tracking-[2px]">Attendance</p>
+            <p className="text-[10px] font-bold opacity-50 uppercase tracking-[2px]">Students</p>
             <h3 className="text-3xl font-black">
-              {stats.presentCount} / {stats.totalChildren}{' '}
-              <span className="text-xs font-normal opacity-60">명 등원</span>
+              {stats.totalChildren}{' '}
+              <span className="text-xs font-normal opacity-60">명 관리중</span>
             </h3>
           </div>
           <div className="bg-blue-600 px-3 py-1 rounded-full text-[10px] font-bold animate-pulse-soft">
@@ -47,8 +47,8 @@ export default function HomePage() {
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-white/[0.08] p-3 rounded-2xl border border-white/[0.08]">
-            <p className="text-[10px] opacity-60">미등원</p>
-            <p className="text-lg font-bold">{stats.absentCount}명</p>
+            <p className="text-[10px] opacity-60">알레르기 등록</p>
+            <p className="text-lg font-bold">{stats.allergyCount}명</p>
           </div>
           <div className="bg-white/[0.08] p-3 rounded-2xl border border-white/[0.08]">
             <p className="text-[10px] opacity-60">투약의뢰</p>

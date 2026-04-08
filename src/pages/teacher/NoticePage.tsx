@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../../hooks';
+import { uploadAPI, API_BASE } from '../../api/api';
 import type { Notice } from '../../types';
 import {
   Sparkles,
@@ -8,18 +10,34 @@ import {
   Image as ImageIcon,
   CheckCircle,
   RefreshCcw,
-  X
+  X,
+  Edit3,
+  Trash2,
+  Megaphone,
+  PenLine
 } from 'lucide-react';
+import { PATH } from '../../router/Path';
+
+const getFullImageUrl = (url?: string) => {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  return `${API_BASE}${url}`;
+};
 
 export default function NoticePage() {
-  const { children, attendance, addNotice, generateAINotice, notices, schedules } = useAppData();
+  const { 
+    children, addNotice, generateAINotice, generateAICommonNotice, 
+    notices, schedules, deleteNotice 
+  } = useAppData();
+  const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState<'common' | 'individual'>('common');
 
-  // --- Common Notice State ---
   const [commonTitle, setCommonTitle] = useState('');
   const [commonContent, setCommonContent] = useState('');
   const [commonPhoto, setCommonPhoto] = useState<string | null>(null);
+  const [commonPhotoFile, setCommonPhotoFile] = useState<File | null>(null);
+  const [isCommonGenerating, setIsCommonGenerating] = useState(false);
 
   // --- Individual Notice State ---
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
@@ -29,15 +47,13 @@ export default function NoticePage() {
   const [drafts, setDrafts] = useState<Record<string, Notice>>({});
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const presentChildren = children.filter((c) =>
-    attendance.find((a) => a.childId === c.id && a.status === 'present')
-  );
+  const allChildren = children; // 모든 원아 표시 요구사항 반영
   const commonNotices = notices.filter((n) => n.type === 'common');
   const individualNotices = notices.filter((n) => n.type === 'individual');
 
   const todayString = new Date().toISOString().split('T')[0];
   const completedIndividualChildIds = new Set(individualNotices.filter(n => n.date === todayString).map(n => n.childId));
-  const completedCount = presentChildren.filter(c => completedIndividualChildIds.has(c.id)).length;
+  const completedCount = allChildren.filter(c => completedIndividualChildIds.has(c.id)).length;
 
   const todaySchedules = schedules.filter(s => s.date === todayString);
 
@@ -62,28 +78,61 @@ export default function NoticePage() {
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setCommonPhoto(URL.createObjectURL(e.target.files[0]));
+      const file = e.target.files[0];
+      setCommonPhotoFile(file);
+      setCommonPhoto(URL.createObjectURL(file));
     }
   };
 
-  const handleSendCommon = () => {
+  const handleSendCommon = async () => {
     if (!commonTitle.trim() || !commonContent.trim()) return;
     
-    const newNotice: Notice = {
-      id: `n-${Date.now()}`,
+    let photoUrl = undefined;
+      if (commonPhotoFile) {
+        try {
+          const uploadRes = await uploadAPI.file(commonPhotoFile);
+          if (uploadRes.success) {
+            photoUrl = uploadRes.url;
+          }
+        } catch (err) {
+          console.error("Image upload failed", err);
+          alert('이미지 업로드에 실패했습니다. 이미지를 제외하고 전송하거나 다시 시도해주세요.');
+          return;
+        }
+      }
+
+    const newNotice: Partial<Notice> = {
       type: 'common',
       title: commonTitle,
       content: commonContent,
       date: new Date().toISOString().split('T')[0],
       isRead: false,
       isSent: true,
-      photoUrl: commonPhoto || undefined
+      photoUrl
     };
-    addNotice(newNotice);
-    setCommonTitle('');
-    setCommonContent('');
-    setCommonPhoto(null);
-    alert('전체 공통 알림장이 전송되었습니다.');
+    try {
+      await addNotice(newNotice as Notice);
+      setCommonTitle('');
+      setCommonContent('');
+      setCommonPhoto(null);
+      setCommonPhotoFile(null);
+      alert('전체 공통 알림장이 전송되었습니다.');
+    } catch {
+      alert('알림장 전송에 실패했습니다.');
+    }
+  };
+
+  const handleGenerateCommonDraft = async () => {
+    if (!commonContent.trim()) return;
+    setIsCommonGenerating(true);
+    try {
+      const generated = await generateAICommonNotice(commonContent);
+      setCommonContent(generated);
+    } catch (error: any) {
+      alert(error.message || 'AI 초안 생성 중 오류가 발생했습니다.');
+    } finally {
+      setIsCommonGenerating(false);
+    }
   };
 
   const handleGenerateDraft = async (childId: string) => {
@@ -105,28 +154,64 @@ export default function NoticePage() {
     }
   };
 
-  const handleSendIndividual = (childId: string) => {
+  const handleSendIndividual = async (childId: string) => {
     const draft = drafts[childId];
     if (!draft) return;
     
-    addNotice({ ...draft, isSent: true });
-    alert('개별 알림장이 해당 학부모님께 전송되었습니다.');
-    setSelectedChildId(null);
-    setDrafts(prev => {
-      const newDrafts = { ...prev };
-      delete newDrafts[childId];
-      return newDrafts;
-    });
-    setMemos(prev => {
-      const newMemos = { ...prev };
-      delete newMemos[childId];
-      return newMemos;
-    });
+    try {
+      await addNotice({ ...draft, isSent: true } as Notice);
+      alert('개별 알림장이 해당 학부모님께 전송되었습니다.');
+      setSelectedChildId(null);
+      setDrafts(prev => {
+        const newDrafts = { ...prev };
+        delete newDrafts[childId];
+        return newDrafts;
+      });
+      setMemos(prev => {
+        const newMemos = { ...prev };
+        delete newMemos[childId];
+        return newMemos;
+      });
+    } catch {
+      alert('알림장 전송에 실패했습니다.');
+    }
+  };
+
+  const handleSendManualIndividual = async (childId: string) => {
+    const memo = memos[childId];
+    if (!memo?.trim()) return;
+
+    const child = allChildren.find(c => c.id === childId);
+    const newNotice: Partial<Notice> = {
+      type: 'individual',
+      childId,
+      childName: child?.name,
+      title: `${new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })} ${child?.name} 알림장`,
+      content: memo,
+      date: new Date().toISOString().split('T')[0],
+      isRead: false,
+      isSent: true,
+    };
+
+    try {
+      await addNotice(newNotice as Notice);
+      alert('개별 알림장이 전송되었습니다.');
+      setSelectedChildId(null);
+      setMemos(prev => {
+        const newMemos = { ...prev };
+        delete newMemos[childId];
+        return newMemos;
+      });
+    } catch {
+      alert('알림장 전송에 실패했습니다.');
+    }
   };
 
   return (
     <div className="p-6 pb-28 animate-fade-in">
-      <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-2">선생님 알림장 ✍️</h2>
+      <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-2">
+        선생님 알림장 <PenLine className="text-blue-500" size={24} />
+      </h2>
 
       {/* Tabs */}
       <div className="flex bg-slate-100 p-1 rounded-2xl mb-8">
@@ -152,7 +237,7 @@ export default function NoticePage() {
         <div className="animate-fade-in">
           <div className="bg-white border border-slate-200 rounded-3xl p-5 mb-8 shadow-sm">
             <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <MessageSquare size={18} className="text-blue-500" /> 공통 알림장 작성
+              <Megaphone size={18} className="text-blue-500" /> 공통 알림장 작성
             </h3>
             
             <div className="space-y-4">
@@ -168,12 +253,23 @@ export default function NoticePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">내용 (공지사항)</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-bold text-slate-500">내용 (공지사항)</label>
+                  <button 
+                    onClick={handleGenerateCommonDraft}
+                    disabled={isCommonGenerating || !commonContent.trim()}
+                    className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg hover:bg-indigo-100 disabled:opacity-50 transition-colors flex items-center gap-1 active:scale-95"
+                  >
+                    <Sparkles size={12} />
+                    {isCommonGenerating ? 'AI가 다듬는 중...' : 'AI 내용 다듬기'}
+                  </button>
+                </div>
                 <textarea
-                  placeholder="학부모님들께 전달할 공통 내용을 입력하세요..."
-                  className="w-full h-32 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-blue-400 focus:bg-white transition-all resize-none"
+                  placeholder="학부모님들께 전달할 공통 내용을 간단히 입력 후 'AI 내용 다듬기'를 눌러보세요!"
+                  className={`w-full h-32 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-blue-400 focus:bg-white transition-all resize-none ${isCommonGenerating ? 'opacity-50 pointer-events-none' : ''}`}
                   value={commonContent}
                   onChange={e => setCommonContent(e.target.value)}
+                  disabled={isCommonGenerating}
                 />
               </div>
 
@@ -213,13 +309,42 @@ export default function NoticePage() {
             <div className="flex flex-col gap-3">
               {commonNotices.length > 0 ? (
                 commonNotices.map((n) => (
-                  <div key={n.id} className="p-4 bg-white border border-slate-200 rounded-2xl">
+                  <div key={n.id} className="p-4 bg-white border border-slate-200 rounded-2xl group relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => navigate(PATH.TEACHER.NOTICE_EDIT.replace(':id', n.id))}
+                        className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                        title="수정"
+                      >
+                        <Edit3 size={14} />
+                      </button>
+                      <button 
+                        onClick={async () => {
+                          if (window.confirm('정말 삭제하시겠습니까?')) {
+                            await deleteNotice(n.id);
+                          }
+                        }}
+                        className="p-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors"
+                        title="삭제"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                     <p className="text-[10px] text-slate-400 mb-1">{n.date}</p>
-                    <p className="font-bold text-sm text-slate-800 mb-2">{n.title}</p>
+                    <div className="flex justify-between items-start mb-2">
+                      <p className="font-bold text-sm text-slate-800">{n.title}</p>
+                    </div>
                     <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-line">{n.content}</p>
-                    {n.photoUrl && (
+                    {n.photoUrl && n.photoUrl !== 'string' && (
                       <div className="mt-3 rounded-xl overflow-hidden h-32 border border-slate-100">
-                        <img src={n.photoUrl} alt="Attached" className="w-full h-full object-cover" />
+                        <img 
+                          src={n.photoUrl} 
+                          alt="Attached" 
+                          className="w-full h-full object-cover" 
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).parentElement?.style.setProperty('display', 'none');
+                          }}
+                        />
                       </div>
                     )}
                   </div>
@@ -247,17 +372,17 @@ export default function NoticePage() {
                 <div className="flex items-baseline gap-2 z-10 mt-1">
                   <span className="text-4xl font-black text-emerald-600 tracking-tight">{completedCount}</span>
                   <span className="text-2xl font-bold text-slate-300">/</span>
-                  <span className="text-2xl font-bold text-slate-400">{presentChildren.length}</span>
+                  <span className="text-2xl font-bold text-slate-400">{allChildren.length}</span>
                 </div>
                 <span className="text-xs font-bold text-emerald-600/80 mt-1.5 z-10 ml-2">완료됨 명</span>
               </div>
-
+ 
               <div className="mb-4 flex items-center justify-between">
-                 <h3 className="text-sm font-bold text-slate-700 ml-1">출석 아동 목록</h3>
-                 <span className="text-[11px] font-bold text-emerald-600 bg-emerald-100 px-2.5 py-1 rounded-full">출석 {presentChildren.length}명</span>
+                 <h3 className="text-sm font-bold text-slate-700 ml-1">전체 원아 목록</h3>
+                 <span className="text-[11px] font-bold text-emerald-600 bg-emerald-100 px-2.5 py-1 rounded-full">총 {allChildren.length}명</span>
               </div>
               <div className="grid grid-cols-3 gap-3">
-                {presentChildren.map((child) => {
+                {allChildren.map((child) => {
                   const isCompleted = completedIndividualChildIds.has(child.id);
                   return (
                     <button
@@ -273,9 +398,13 @@ export default function NoticePage() {
                         </div>
                       )}
                       
-                      <span className={`text-3xl p-2.5 rounded-full leading-none transition-colors ${isCompleted ? 'bg-white shadow-sm' : 'bg-slate-50'}`}>
-                        {child.profileEmoji}
-                      </span>
+                      <div className={`w-14 h-14 rounded-full flex items-center justify-center overflow-hidden transition-colors ${isCompleted ? 'bg-white shadow-sm' : 'bg-slate-50'}`}>
+                        {child.profileImageUrl ? (
+                          <img src={getFullImageUrl(child.profileImageUrl)} alt={child.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-2xl leading-none">{child.profileEmoji}</span>
+                        )}
+                      </div>
                       
                       <span className={`font-bold text-sm ${isCompleted ? 'text-emerald-900' : 'text-slate-700'}`}>
                         {child.name}
@@ -296,9 +425,19 @@ export default function NoticePage() {
             <div className="animate-fade-in">
               {/* Selected Child Header */}
               <div className="flex items-center justify-between mb-6 bg-blue-50/50 p-3 rounded-2xl border border-blue-100">
-                <div className="flex items-center gap-3 pl-2">
-                   <span className="text-2xl leading-none">{presentChildren.find(c => c.id === selectedChildId)?.profileEmoji}</span>
-                   <span className="font-black text-blue-900">{presentChildren.find(c => c.id === selectedChildId)?.name} 알림장 작성</span>
+                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mr-4 shadow-sm overflow-hidden border border-blue-200">
+                  {(() => {
+                    const selChild = allChildren.find(c => c.id === selectedChildId);
+                    return selChild?.profileImageUrl ? (
+                      <img src={getFullImageUrl(selChild.profileImageUrl)} alt={selChild.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-2xl leading-none">{selChild?.profileEmoji || '👶'}</span>
+                    );
+                  })()}
+                </div>
+                <div>
+                  <h2 className="font-black text-blue-900">{allChildren.find(c => c.id === selectedChildId)?.name || '아이'} 알림장 작성</h2>
+                  <p className="text-xs text-blue-400 font-bold uppercase tracking-wider">Individual Notice</p>
                 </div>
                 <button
                   className="w-8 h-8 flex items-center justify-center bg-white rounded-full text-slate-400 hover:text-slate-600 shadow-sm"
@@ -325,7 +464,7 @@ export default function NoticePage() {
                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500"></div>
                    
                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                     <Sparkles size={14} className="text-purple-500" /> 특이사항 간단 메모
+                     특이사항 간단 메모
                    </label>
                    <textarea
                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-300 focus:bg-white transition-all resize-none min-h-[100px] mb-4 shadow-inner"
@@ -355,24 +494,33 @@ export default function NoticePage() {
                      </div>
                    </div>
 
-                   <button
-                     className="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-black rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm"
-                     onClick={() => handleGenerateDraft(selectedChildId)}
-                     disabled={isGenerating}
-                   >
-                     {isGenerating ? (
-                       <span className="animate-pulse">✨ AI가 초안 작성 중...</span>
-                     ) : (
-                       <>✨ AI 초안 만들기</>
-                     )}
-                   </button>
+                    <div className="flex gap-2">
+                      <button
+                        className="flex-[2] py-3.5 bg-slate-800 text-white font-black rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm"
+                        onClick={() => handleGenerateDraft(selectedChildId)}
+                        disabled={isGenerating}
+                      >
+                        {isGenerating ? (
+                          <span className="animate-pulse">초안 작성 중...</span>
+                        ) : (
+                          <>AI 초안 만들기</>
+                        )}
+                      </button>
+                      <button
+                        className="flex-1 py-3.5 bg-white border-2 border-slate-800 text-slate-800 font-bold rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm"
+                        onClick={() => handleSendManualIndividual(selectedChildId)}
+                        disabled={isGenerating || !memos[selectedChildId]?.trim()}
+                      >
+                        바로 전송
+                      </button>
+                    </div>
                 </div>
               ) : (
                 /* Generated Draft Panel */
                 <div className="bg-white border-2 border-purple-200 shadow-sm rounded-3xl p-5 mb-4 animate-fade-in">
                   <div className="flex justify-between items-center mb-3">
                     <label className="text-xs font-bold text-purple-700 flex items-center gap-1.5">
-                      <Sparkles size={14} /> AI 초안 결과 (직접 수정 가능)
+                      AI 초안 결과 (직접 수정 가능)
                     </label>
                     <button
                       className="text-[10px] flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg font-bold transition-colors"
@@ -409,13 +557,35 @@ export default function NoticePage() {
                     individualNotices
                       .filter((n) => n.childId === selectedChildId)
                       .map((n) => (
-                      <div key={n.id} className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
-                        <div className="flex justify-between items-center mb-1">
+                      <div key={n.id} className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm group relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => navigate(PATH.TEACHER.NOTICE_EDIT.replace(':id', n.id))}
+                            className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                            title="수정"
+                          >
+                            <Edit3 size={14} />
+                          </button>
+                          <button 
+                            onClick={async () => {
+                              if (window.confirm('정말 삭제하시겠습니까?')) {
+                                await deleteNotice(n.id);
+                              }
+                            }}
+                            className="p-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors"
+                            title="삭제"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                        <div className="flex justify-between items-start mb-2">
                           <p className="font-bold text-[11px] text-blue-600">{n.date}</p>
-                          {n.isRead ? (
-                             <p className="text-[10px] text-slate-400 font-bold px-2 py-0.5 bg-slate-100 rounded-md">읽음</p>
-                          ) : (
-                             <p className="text-[10px] text-amber-500 font-bold px-2 py-0.5 bg-amber-50 rounded-md">안읽음</p>
+                          {n.type !== 'common' && (
+                            n.isRead ? (
+                               <p className="text-[10px] text-slate-400 font-bold px-2 py-0.5 bg-slate-100 rounded-md">읽음</p>
+                            ) : (
+                               <p className="text-[10px] text-amber-500 font-bold px-2 py-0.5 bg-amber-50 rounded-md">안읽음</p>
+                            )
                           )}
                         </div>
                         <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-line bg-slate-50 p-3 rounded-xl mt-2">{n.content}</p>
