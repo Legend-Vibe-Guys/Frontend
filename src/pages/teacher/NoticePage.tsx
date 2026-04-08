@@ -10,6 +10,8 @@ import {
   RefreshCcw,
   X
 } from 'lucide-react';
+import { StatusDashboard } from '../../components/teacher/StatusDashboard';
+import { ChildListGrid } from '../../components/teacher/ChildListGrid';
 
 export default function NoticePage() {
   const { children, attendance, addNotice, generateAINotice, notices, schedules } = useAppData();
@@ -43,7 +45,6 @@ export default function NoticePage() {
 
   useEffect(() => {
     if (!activitySummary && todaySchedules.length > 0) {
-      // 중요 일정 키워드 필터링 (야외활동, 식사류, 주요 활동 등)
       const importantKeywords = ['활동', '놀이', '식사', '점심', '간식', '야외', '견학', '체욱', '미술'];
       const filteredSchedules = todaySchedules.filter(s =>
         importantKeywords.some(keyword => s.title.includes(keyword))
@@ -53,7 +54,6 @@ export default function NoticePage() {
         const scheduleText = filteredSchedules.map(s => s.title).join(', ');
         setActivitySummary(`오늘 저희 반은 ${scheduleText} 위주로 하루를 보냈습니다.`);
       } else {
-        // 필터링된 일정이 없으면 예비 텍스트 표시
         setActivitySummary(`오늘 저희 반은 실내 자유참여 및 정규 일정을 무사히 마쳤습니다.`);
       }
     }
@@ -238,59 +238,25 @@ export default function NoticePage() {
         <div className="animate-fade-in">
           {!selectedChildId ? (
             <div>
-              {/* 알림장 작성 현황 대시보드 */}
-              <div className="mb-6 bg-emerald-50 border border-emerald-100 rounded-3xl p-6 flex flex-col items-center justify-center shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                   <CheckCircle size={80} />
-                </div>
-                <span className="text-sm font-bold text-emerald-800 mb-1 z-10">오늘 알림장 작성 완료</span>
-                <div className="flex items-baseline gap-2 z-10 mt-1">
-                  <span className="text-4xl font-black text-emerald-600 tracking-tight">{completedCount}</span>
-                  <span className="text-2xl font-bold text-slate-300">/</span>
-                  <span className="text-2xl font-bold text-slate-400">{presentChildren.length}</span>
-                </div>
-                <span className="text-xs font-bold text-emerald-600/80 mt-1.5 z-10 ml-2">완료됨 명</span>
+              {/* 알림장 작성 현황 대시보드 (공통 컴포넌트 적용) */}
+              <StatusDashboard 
+                label="오늘 알림장 작성 완료" 
+                completedCount={completedCount} 
+                totalCount={presentChildren.length} 
+              />
+
+              <div className="mb-4 flex items-center justify-between px-1">
+                 <h3 className="text-sm font-bold text-slate-700">아동 목록</h3>
+                 <span className="text-[11px] font-bold text-emerald-600 bg-emerald-100 px-2.5 py-1 rounded-full">인원 {presentChildren.length}명</span>
               </div>
 
-              <div className="mb-4 flex items-center justify-between">
-                 <h3 className="text-sm font-bold text-slate-700 ml-1">출석 아동 목록</h3>
-                 <span className="text-[11px] font-bold text-emerald-600 bg-emerald-100 px-2.5 py-1 rounded-full">출석 {presentChildren.length}명</span>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                {presentChildren.map((child) => {
-                  const isCompleted = completedIndividualChildIds.has(child.id);
-                  return (
-                    <button
-                      key={child.id}
-                      className={`relative border rounded-2xl p-4 flex flex-col items-center gap-2 transition-all active:scale-95 ${
-                        isCompleted ? 'bg-emerald-50/50 border-emerald-200 hover:border-emerald-300' : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-sm'
-                      }`}
-                      onClick={() => setSelectedChildId(child.id)}
-                    >
-                      {isCompleted && (
-                        <div className="absolute top-2.5 right-2.5 flex items-center justify-center w-5 h-5 bg-emerald-500 rounded-full text-white shadow-sm">
-                          <CheckCircle size={12} strokeWidth={3} />
-                        </div>
-                      )}
-                      
-                      <span className={`text-3xl p-2.5 rounded-full leading-none transition-colors ${isCompleted ? 'bg-white shadow-sm' : 'bg-slate-50'}`}>
-                        {child.profileEmoji}
-                      </span>
-                      
-                      <span className={`font-bold text-sm ${isCompleted ? 'text-emerald-900' : 'text-slate-700'}`}>
-                        {child.name}
-                      </span>
-                      
-                      {drafts[child.id] && !isCompleted && (
-                         <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2.5 py-0.5 rounded-full mt-0.5 shadow-sm">작성중</span>
-                      )}
-                      {isCompleted && (
-                         <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2.5 py-0.5 rounded-full mt-0.5 shadow-sm">발송완료</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+              {/* 아이 목록 그리드 (공통 컴포넌트 적용) */}
+              <ChildListGrid 
+                childrenData={presentChildren}
+                onChildClick={(id) => setSelectedChildId(id)}
+                checkCompletion={(id) => completedIndividualChildIds.has(id)}
+                completedLabel="발송완료"
+              />
             </div>
           ) : (
             <div className="animate-fade-in">
