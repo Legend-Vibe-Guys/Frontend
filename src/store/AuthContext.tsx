@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import type { User, UserRole, ApiError } from '../types';
+import type { User, UserRole, ApiError, LoginResponse, SignupResponse } from '../types';
 import { signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
 import { authAPI } from '../api/api';
@@ -41,10 +41,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signInWithPopup(auth, googleProvider);
       
       try {
-        const res = await authAPI.login() as { user?: User; data?: User };
-        // `user.kids` is provided by backend for teacher role.
-        const returnedUser = res.user || res.data || { role: 'parent' as UserRole };
-        setState({ user: returnedUser as User, isAuthenticated: true, isLoading: false });
+        const res = await authAPI.login() as LoginResponse;
+        setState({ user: res.user, isAuthenticated: true, isLoading: false });
         return { needsSignup: false };
       } catch (err: unknown) {
         const apiError = err as ApiError;
@@ -79,9 +77,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
       }
 
-      const res = await authAPI.signup(payload) as { user?: User; data?: User };
-      const returnedUser = res.user || res.data || { role: data.role as UserRole };
-      setState({ user: returnedUser as User, isAuthenticated: true, isLoading: false });
+      await authAPI.signup(payload) as SignupResponse;
+      
+      // 회원가입 완료 후 유저 정보를 조회하여 상태 반영
+      const loginRes = await authAPI.login() as LoginResponse;
+      
+      setState({ user: loginRes.user, isAuthenticated: true, isLoading: false });
     } catch (error) {
       console.error("Signup failed:", error);
       setState((s) => ({ ...s, isLoading: false }));

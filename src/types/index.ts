@@ -5,15 +5,32 @@ export interface ApiError extends Error {
   status?: number;
 }
 
-export interface User {
+export interface Kid {
   id: string;
+  kidsName: string;
+  birthDate: string;
+  teacherName: string;
+  parentUid: string;
+}
+
+export interface User {
+  uid: string;
   name: string;
   role: UserRole;
-  email: string;
   phone: string;
-  profileImage?: string;
-  className?: string; // 교사: 반 이름
-  childIds?: string[]; // 부모: 연결된 아이 ID
+  createdAt?: string;
+  kids?: Kid[]; // 교사: 담당 학생, 부모: 내 아이
+}
+
+export interface LoginResponse {
+  success: boolean;
+  message: string;
+  user: User;
+}
+
+export interface SignupResponse {
+  success: boolean;
+  message: string;
 }
 
 // ── 아이 정보 ──
