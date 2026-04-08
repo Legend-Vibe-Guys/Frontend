@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import type { User, UserRole, ApiError, LoginResponse, SignupResponse } from '../types';
-import { signInWithPopup, signOut } from 'firebase/auth';
+import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
 import { authAPI } from '../api/api';
 
@@ -32,8 +32,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
-    isLoading: false,
+    isLoading: true,
   });
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const res = await authAPI.login() as LoginResponse;
+          setState({ user: res.user, isAuthenticated: true, isLoading: false });
+        } catch (err: unknown) {
+          const apiError = err as ApiError;
+          if (apiError.status === 404) {
+            setState({ user: null, isAuthenticated: false, isLoading: false });
+          } else {
+            // Error occurred
+            setState({ user: null, isAuthenticated: false, isLoading: false });
+          }
+        }
+      } else {
+        setState({ user: null, isAuthenticated: false, isLoading: false });
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
 
   const loginWithGoogle = useCallback(async () => {
     setState((s) => ({ ...s, isLoading: true }));
@@ -105,6 +129,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setState({ user: null, isAuthenticated: false, isLoading: false });
   }, []);
+
+  if (state.isLoading) {
+    return (
+      <div className="w-full max-w-[430px] h-dvh mx-auto bg-white flex items-center justify-center">
+         <div className="w-6 h-6 border-2 border-slate-200 border-t-blue-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={{ ...state, loginWithGoogle, signup, logout }}>
