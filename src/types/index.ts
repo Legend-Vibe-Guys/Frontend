@@ -11,6 +11,8 @@ export interface Kid {
   birthDate: string;
   teacherName: string;
   parentUid: string;
+  traits?: string[];
+  medicationRequest?: string | null;
 }
 
 export interface User {
@@ -19,7 +21,7 @@ export interface User {
   role: UserRole;
   phone: string;
   createdAt?: string;
-  kids?: Kid[]; // 교사: 담당 학생, 부모: 내 아이
+  kids?: Kid[];
 }
 
 export interface LoginResponse {
@@ -41,11 +43,14 @@ export interface Child {
   classId: string;
   className: string;
   profileEmoji: string;
+  profileImageUrl?: string;
   birthDate: string;
   parentId: string;
   parentName: string;
   parentPhone: string;
   allergies: string[];
+  traits: string[];
+  medicationRequest: string | null;
   notes: string;
   gender: 'male' | 'female';
 }
@@ -92,6 +97,7 @@ export interface Notice {
   photoUrl?: string;
   keywords?: string[];
   cushionLevel?: CushionLevel;
+  createdAt?: string;
 }
 
 // ── 관찰일지 ──
@@ -137,6 +143,7 @@ export interface DashboardStats {
   observationCompleted: number;
   observationTotal: number;
   medicationRequests: number;
+  allergyCount: number;
 }
 
 // ── 활동 타임라인 ──

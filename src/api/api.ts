@@ -1,7 +1,7 @@
 import { auth } from '../config/firebase';
-import type { ApiError } from '../types';
+import type { ApiError, Notice, Child, ScheduleItem } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 // 이후 백엔드 연동 시 사용할 fetch wrapper
 async function request<T>(
@@ -11,21 +11,24 @@ async function request<T>(
   const url = `${API_BASE}${endpoint}`;
   
   let token = null;
+  // Wait for auth to be ready or just use currentUser
   if (auth.currentUser) {
-    try {
-      token = await auth.currentUser.getIdToken();
-    } catch (e) {
-      console.warn("Failed to get Firebase ID token:", e);
-    }
+    token = await auth.currentUser.getIdToken();
+  }
+
+  const isFormData = options?.body instanceof FormData;
+  const headers: Record<string, string> = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...options?.headers,
+  } as Record<string, string>;
+
+  if (!isFormData && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
   }
 
   const res = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options?.headers,
-    },
     ...options,
+    headers,
   });
   
   if (!res.ok) {
@@ -54,10 +57,28 @@ export const authAPI = {
   refresh: () => request('/auth/refresh', { method: 'POST' }),
 };
 
-// ── Children API ──
-export const childrenAPI = {
-  getAll: () => request('/children'),
-  getById: (id: string) => request(`/children/${id}`),
+// ── Students API ──
+export const studentsAPI = {
+  getAll: () => request<{ success: boolean; students: Record<string, unknown>[] }>('/students'),
+  getById: (id: string) => request(`/students/${id}`),
+  updateTraits: (id: string, traits: string[]) => request<{ success: boolean; message: string }>(`/students/${id}/traits`, {
+    method: 'PUT',
+    body: JSON.stringify({ traits })
+  }),
+  update: (id: string, data: Partial<Child>) =>
+    request<{ success: boolean; message: string }>(`/students/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+};
+
+// ── Memos API ──
+export const memosAPI = {
+  getByChild: (childId: string) => request<{ success: boolean; memos: Record<string, string> }>(`/students/${childId}/memos`),
+  save: (childId: string, date: string, content: string) => request<{ success: boolean; message: string }>(`/students/${childId}/memos/${date}`, {
+    method: 'POST',
+    body: JSON.stringify({ content })
+  }),
 };
 
 // ── Attendance API ──
@@ -70,8 +91,13 @@ export const attendanceAPI = {
     }),
 };
 
-// ── Notice API (핵심 - API화 가능) ──
+// ── Notice API ──
 export const noticeAPI = {
+  create: (data: Partial<Notice>) => request<{ success: boolean; notice: Notice }>('/notices', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  getAll: () => request<{ success: boolean; notices: Notice[] }>('/notices'),
   generate: (data: {
     childId: string;
     keywords: string[];
@@ -92,9 +118,20 @@ export const noticeAPI = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+  markAsRead: (id: string) => request<{ success: boolean }>(`/notices/${id}/read`, {
+    method: 'PUT',
+  }),
+  update: (id: string, data: Partial<Notice>) =>
+    request<{ success: boolean; message: string }>(`/notices/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    request<{ success: boolean; message: string }>(`/notices/${id}`, {
+      method: 'DELETE',
+    }),
   send: (noticeId: string) =>
     request(`/notices/${noticeId}/send`, { method: 'POST' }),
-  getAll: () => request('/notices'),
 };
 
 // ── Observation API (핵심 - API화 가능) ──
@@ -116,12 +153,18 @@ export const observationAPI = {
 
 // ── Schedule API ──
 export const scheduleAPI = {
-  getByDate: (date: string) => request(`/schedules?date=${date}`),
-  update: (id: string, data: Record<string, unknown>) =>
-    request(`/schedules/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
+  getAll: (date?: string) => request<{ success: boolean; schedules: ScheduleItem[] }>(`/schedules${date ? `?date=${date}` : ''}`),
+  create: (data: Partial<ScheduleItem>) => request<{ success: boolean; schedule: ScheduleItem }>('/schedules', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  update: (id: string, data: Partial<ScheduleItem>) => request<{ success: boolean; message: string }>(`/schedules/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  }),
+  delete: (id: string) => request<{ success: boolean; message: string }>(`/schedules/${id}`, {
+    method: 'DELETE',
+  }),
 };
 
 // ── Meal API ──
@@ -130,3 +173,17 @@ export const mealAPI = {
   checkAllergies: (date: string) =>
     request(`/meals/allergy-check?date=${date}`),
 };
+
+// ── Upload API ──
+export const uploadAPI = {
+  file: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return request<{ success: boolean; url: string }>('/upload', {
+      method: 'POST',
+      body: formData,
+      headers: {}, // Browser sets boundary
+    });
+  },
+};
+

@@ -14,7 +14,7 @@ import { PATH } from '../../router/Path';
 const TEACHER_TABS = [
   { path: PATH.TEACHER.ROOT, icon: LayoutGrid, label: '홈', end: true },
   { path: PATH.TEACHER.SCHEDULE, icon: Calendar, label: '일정' },
-  { path: PATH.TEACHER.ATTENDANCE, icon: UserCheck, label: '등하원' },
+  { path: PATH.TEACHER.STUDENTS, icon: UserCheck, label: '원아 관리' },
   { path: PATH.TEACHER.NOTICE, icon: MessageCircle, label: '알림장' },
   { path: PATH.TEACHER.OBSERVATION, icon: Camera, label: '관찰일지' },
 ];

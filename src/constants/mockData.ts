@@ -25,6 +25,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: ['우유'],
     notes: '낮잠 시간에 잠을 잘 못 잠',
     gender: 'male',
+    traits: [], // 👈 추가
+    medicationRequest: null,
   },
   {
     id: 'c2',
@@ -40,6 +42,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: ['땅콩', '갑각류'],
     notes: '',
     gender: 'female',
+    traits: [], // 👈 추가
+    medicationRequest: null,
   },
   {
     id: 'c3',
@@ -55,6 +59,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: [],
     notes: '블록 놀이를 좋아함',
     gender: 'male',
+    traits: [], // 👈 추가
+    medicationRequest: null,
   },
   {
     id: 'c4',
@@ -70,6 +76,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: ['계란'],
     notes: '그림 그리기를 좋아함',
     gender: 'female',
+    traits: [], // 👈 추가
+    medicationRequest: null,
   },
   {
     id: 'c5',
@@ -85,6 +93,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: [],
     notes: '야외 활동을 즐김',
     gender: 'male',
+    traits: [], // 👈 추가
+    medicationRequest: null,
   },
   {
     id: 'c6',
@@ -100,6 +110,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: [],
     notes: '',
     gender: 'female',
+    traits: [], // 👈 추가
+    medicationRequest: null,
   },
   {
     id: 'c7',
@@ -115,6 +127,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: ['밀가루'],
     notes: '음악 활동에 적극적',
     gender: 'male',
+    traits: [], // 👈 추가
+    medicationRequest: null,
   },
   {
     id: 'c8',
@@ -130,6 +144,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: [],
     notes: '독서를 좋아함',
     gender: 'female',
+    traits: [], // 👈 추가
+    medicationRequest: null,
   },
   {
     id: 'c9',
@@ -145,6 +161,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: [],
     notes: '',
     gender: 'male',
+    traits: [], // 👈 추가
+    medicationRequest: null,
   },
   {
     id: 'c10',
@@ -160,6 +178,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: ['대두'],
     notes: '춤추기를 좋아함',
     gender: 'female',
+    traits: [], // 👈 추가
+    medicationRequest: null,
   },
   {
     id: 'c11',
@@ -175,6 +195,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: [],
     notes: '',
     gender: 'male',
+    traits: [],
+    medicationRequest: null,
   },
   {
     id: 'c12',
@@ -190,6 +212,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: [],
     notes: '소꿉놀이를 좋아함',
     gender: 'female',
+    traits: [],
+    medicationRequest: null,
   },
   {
     id: 'c13',
@@ -205,6 +229,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: [],
     notes: '',
     gender: 'male',
+    traits: [],
+    medicationRequest: null,
   },
   {
     id: 'c14',
@@ -220,6 +246,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: [],
     notes: '친구들과 잘 어울림',
     gender: 'female',
+    traits: [],
+    medicationRequest: null,
   },
   {
     id: 'c15',
@@ -235,6 +263,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: [],
     notes: '',
     gender: 'male',
+    traits: [],
+    medicationRequest: null,
   },
   {
     id: 'c16',
@@ -250,6 +280,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: ['새우'],
     notes: '',
     gender: 'female',
+    traits: [],
+    medicationRequest: null,
   },
   {
     id: 'c17',
@@ -265,6 +297,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: [],
     notes: '과학 탐구 활동을 좋아함',
     gender: 'male',
+    traits: [],
+    medicationRequest: null,
   },
   {
     id: 'c18',
@@ -280,6 +314,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: [],
     notes: '',
     gender: 'female',
+    traits: [],
+    medicationRequest: null,
   },
   {
     id: 'c19',
@@ -295,6 +331,8 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: [],
     notes: '',
     gender: 'male',
+    traits: [],
+    medicationRequest: null,
   },
   {
     id: 'c20',
@@ -310,21 +348,20 @@ export const MOCK_CHILDREN: Child[] = [
     allergies: [],
     notes: '역할놀이를 즐김',
     gender: 'female',
+    traits: [],
+    medicationRequest: null,
   },
 ];
 
 // ── 출석 기록 ──
-export const MOCK_ATTENDANCE: AttendanceRecord[] = MOCK_CHILDREN.map(
-  (child, i) => ({
-    id: `att-${child.id}`,
-    childId: child.id,
-    date: '2026-04-07',
-    status:
-      i < 18 ? ('present' as const) : ('absent' as const),
-    arrivalTime: i < 18 ? `09:${String(5 + i * 3).padStart(2, '0')}` : undefined,
-    reason: i === 18 ? '체험학습' : i === 19 ? '병결' : undefined,
-  }),
-);
+export const MOCK_ATTENDANCE: AttendanceRecord[] = MOCK_CHILDREN.map((child, i) => ({
+  id: `att-${child.id}`,
+  childId: child.id,
+  date: '2026-04-07',
+  status: i < 18 ? ('present' as const) : ('absent' as const),
+  arrivalTime: i < 18 ? `09:${String(5 + i * 3).padStart(2, '0')}` : undefined,
+  reason: i === 18 ? '체험학습' : i === 19 ? '병결' : undefined,
+}));
 
 // ── 일정 ──
 export const MOCK_SCHEDULES: ScheduleItem[] = [
@@ -472,13 +509,11 @@ export const MOCK_OBSERVATIONS: ObservationLog[] = [
     categories: [
       {
         name: '사회관계',
-        analysis:
-          '또래와 협력하여 블록 쌓기 놀이를 진행하며, 차례를 기다리는 모습이 관찰됨.',
+        analysis: '또래와 협력하여 블록 쌓기 놀이를 진행하며, 차례를 기다리는 모습이 관찰됨.',
       },
       {
         name: '신체운동',
-        analysis:
-          '대근육 활동 시 균형 감각이 발달하고 있으며, 점프 동작이 안정적으로 수행됨.',
+        analysis: '대근육 활동 시 균형 감각이 발달하고 있으며, 점프 동작이 안정적으로 수행됨.',
       },
     ],
     content:
@@ -496,8 +531,7 @@ export const MOCK_OBSERVATIONS: ObservationLog[] = [
         analysis: '숲 체험에서 다양한 곤충을 관찰하며 호기심을 표현함.',
       },
     ],
-    content:
-      '지호는 야외 숲 체험 시간에 나뭇잎 아래의 벌레를 발견하고 친구들에게 알려주었습니다.',
+    content: '지호는 야외 숲 체험 시간에 나뭇잎 아래의 벌레를 발견하고 친구들에게 알려주었습니다.',
     isAIGenerated: true,
   },
 ];
@@ -512,6 +546,7 @@ export const MOCK_DASHBOARD_STATS: DashboardStats = {
   observationCompleted: 5,
   observationTotal: 20,
   medicationRequests: 1,
+  allergyCount: 0,
 };
 
 // ── 활동 타임라인 ──

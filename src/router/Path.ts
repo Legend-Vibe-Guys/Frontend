@@ -7,8 +7,10 @@ export const PATH = {
   TEACHER: {
     ROOT: '/teacher',
     SCHEDULE: '/teacher/schedule',
-    ATTENDANCE: '/teacher/attendance',
+    STUDENTS: '/teacher/students',
+    STUDENT_DETAIL: '/teacher/students/:id',
     NOTICE: '/teacher/notice',
+    NOTICE_EDIT: '/teacher/notice/edit/:id',
     OBSERVATION: '/teacher/observation',
   },
 
@@ -16,5 +18,6 @@ export const PATH = {
   PARENT: {
     ROOT: '/parent',
     NOTICES: '/parent/notices',
+    EDIT_CHILD: '/parent/child/edit',
   },
 } as const;

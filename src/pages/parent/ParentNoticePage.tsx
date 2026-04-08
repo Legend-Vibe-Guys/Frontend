@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import { useAppData } from '../../hooks';
-import { Bell, ChevronDown, ChevronUp, Megaphone } from 'lucide-react';
+import { Bell, ChevronDown, ChevronUp, Megaphone, ClipboardList } from 'lucide-react';
 
 export default function ParentNoticePage() {
-  const { notices } = useAppData();
+  const { notices, children, markNoticeAsRead } = useAppData();
   const [tab, setTab] = useState<'common' | 'individual'>('common');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const commonNotices = notices.filter((n) => n.type === 'common');
-  const individualNotices = notices.filter((n) => n.type === 'individual' && n.childId === 'c1');
+  const childIds = children.map(c => c.id);
+  const individualNotices = notices.filter((n) => n.type === 'individual' && childIds.includes(n.childId || ''));
   const currentList = tab === 'common' ? commonNotices : individualNotices;
 
   return (
     <div className="p-6 pb-28 animate-fade-in">
-      <h2 className="text-2xl font-black text-slate-900 mb-6">알림장 📋</h2>
+      <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-2">
+        알림장 <ClipboardList size={22} className="text-blue-600" />
+      </h2>
 
       <div className="flex gap-2 mb-6 bg-slate-50 p-1 rounded-2xl">
         <button className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-semibold transition-all ${tab === 'common' ? 'bg-white text-blue-600 font-bold shadow-sm' : 'text-slate-400'}`} onClick={() => setTab('common')}>
@@ -30,7 +33,16 @@ export default function ParentNoticePage() {
         ) : (
           currentList.map((notice) => (
             <div key={notice.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden stagger-item">
-              <div className="flex items-center justify-between p-4 cursor-pointer" onClick={() => setExpandedId(expandedId === notice.id ? null : notice.id)}>
+              <div className="flex items-center justify-between p-4 cursor-pointer" onClick={() => {
+                if (expandedId !== notice.id) {
+                  setExpandedId(notice.id);
+                  if (!notice.isRead) {
+                    markNoticeAsRead(notice.id);
+                  }
+                } else {
+                  setExpandedId(null);
+                }
+              }}>
                 <div>
                   <p className="text-[10px] text-slate-400 mb-[2px]">{notice.date}</p>
                   <p className="font-bold text-sm text-slate-800">{notice.title}</p>
