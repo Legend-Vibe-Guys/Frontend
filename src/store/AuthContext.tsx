@@ -1,6 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import type { User, UserRole } from '../types';
+import type { User, UserRole, ApiError } from '../types';
+import { signInWithPopup, signOut } from 'firebase/auth';
+import { auth, googleProvider } from '../config/firebase';
+import { authAPI } from '../api/api';
 
 interface AuthState {
   user: User | null;
@@ -9,39 +12,19 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string, role: UserRole) => Promise<void>;
+  loginWithGoogle: () => Promise<{ needsSignup: boolean }>;
   signup: (data: SignupData) => Promise<void>;
   logout: () => void;
-  switchRole: (role: UserRole) => void;
 }
 
-interface SignupData {
+export interface SignupData {
   name: string;
-  email: string;
   phone: string;
   role: UserRole;
   childName?: string;
   childBirthDate?: string;
-  className?: string;
+  assignedTeacher?: string;
 }
-
-const MOCK_TEACHER: User = {
-  id: 't1',
-  name: '이규현',
-  role: 'teacher',
-  email: 'teacher@icare.ai',
-  phone: '010-1234-5678',
-  className: '해바라기반',
-};
-
-const MOCK_PARENT: User = {
-  id: 'p1',
-  name: '김영희',
-  role: 'parent',
-  email: 'parent@icare.ai',
-  phone: '010-2345-6789',
-  childIds: ['c1'],
-};
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -52,32 +35,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: false,
   });
 
-  const login = useCallback(async (_email: string, _password: string, role: UserRole) => {
+  const loginWithGoogle = useCallback(async () => {
     setState((s) => ({ ...s, isLoading: true }));
-    // Mock delay
-    await new Promise((r) => setTimeout(r, 800));
-    const user = role === 'teacher' ? MOCK_TEACHER : MOCK_PARENT;
-    setState({ user, isAuthenticated: true, isLoading: false });
+    try {
+      await signInWithPopup(auth, googleProvider);
+      
+      try {
+        const res = await authAPI.login() as { user?: User; data?: User };
+        // `user.kids` is provided by backend for teacher role.
+        const returnedUser = res.user || res.data || { role: 'parent' as UserRole };
+        setState({ user: returnedUser as User, isAuthenticated: true, isLoading: false });
+        return { needsSignup: false };
+      } catch (err: unknown) {
+        const apiError = err as ApiError;
+        if (apiError.status === 404) {
+          // 미가입 유저
+          setState((s) => ({ ...s, isLoading: false }));
+          return { needsSignup: true };
+        }
+        throw apiError;
+      }
+    } catch (error) {
+      console.error("Login with Google failed:", error);
+      setState((s) => ({ ...s, isLoading: false }));
+      throw error;
+    }
   }, []);
 
   const signup = useCallback(async (data: SignupData) => {
-    void data;
     setState((s) => ({ ...s, isLoading: true }));
-    await new Promise((r) => setTimeout(r, 800));
-    setState({ user: MOCK_TEACHER, isAuthenticated: true, isLoading: false });
+    try {
+      const payload: Record<string, unknown> = {
+        name: data.name,
+        phone: data.phone,
+        role: data.role,
+      };
+
+      if (data.role === 'parent') {
+        payload.studentInfo = {
+          kidsName: data.childName,
+          birthDate: data.childBirthDate,
+          teacherName: data.assignedTeacher,
+        };
+      }
+
+      const res = await authAPI.signup(payload) as { user?: User; data?: User };
+      const returnedUser = res.user || res.data || { role: data.role as UserRole };
+      setState({ user: returnedUser as User, isAuthenticated: true, isLoading: false });
+    } catch (error) {
+      console.error("Signup failed:", error);
+      setState((s) => ({ ...s, isLoading: false }));
+      throw error;
+    }
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    setState((s) => ({ ...s, isLoading: true }));
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.warn("Firebase signout error:", e);
+    }
     setState({ user: null, isAuthenticated: false, isLoading: false });
   }, []);
 
-  const switchRole = useCallback((role: UserRole) => {
-    const user = role === 'teacher' ? MOCK_TEACHER : MOCK_PARENT;
-    setState({ user, isAuthenticated: true, isLoading: false });
-  }, []);
-
   return (
-    <AuthContext.Provider value={{ ...state, login, signup, logout, switchRole }}>
+    <AuthContext.Provider value={{ ...state, loginWithGoogle, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );
