@@ -12,10 +12,15 @@ import { PATH } from '../../router/Path';
 
 export default function HomePage() {
   const { user } = useAuth();
-  const { stats, schedules, activities } = useAppData();
+  const { stats, schedules } = useAppData();
   const navigate = useNavigate();
 
-  const nextSchedule = schedules.find((s) => !s.isCompleted);
+  const today = new Date().toISOString().split('T')[0];
+  const todaySchedules = schedules
+    .filter((s) => s.date === today)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+  const nextSchedule = todaySchedules.find((s) => !s.isCompleted);
 
   return (
     <div className="p-6 pb-28 animate-fade-in">
@@ -27,18 +32,18 @@ export default function HomePage() {
         </h2>
       </div>
 
-      {/* Attendance Hero */}
+      {/* Student Management Hero */}
       <div
         className="bg-gradient-to-br from-slate-900 to-[#1a1a2e] p-6 rounded-[2rem] text-white mb-6 cursor-pointer active:scale-[0.98] transition-transform"
         style={{ boxShadow: '0 12px 32px rgba(15,23,42,0.25)' }}
-        onClick={() => navigate(PATH.TEACHER.ATTENDANCE)}
+        onClick={() => navigate(PATH.TEACHER.STUDENTS)}
       >
         <div className="flex justify-between items-start mb-6">
           <div>
-            <p className="text-[10px] font-bold opacity-50 uppercase tracking-[2px]">Attendance</p>
+            <p className="text-[10px] font-bold opacity-50 uppercase tracking-[2px]">Students</p>
             <h3 className="text-3xl font-black">
-              {stats.presentCount} / {stats.totalChildren}{' '}
-              <span className="text-xs font-normal opacity-60">명 등원</span>
+              {stats.totalChildren}{' '}
+              <span className="text-xs font-normal opacity-60">명 관리중</span>
             </h3>
           </div>
           <div className="bg-blue-600 px-3 py-1 rounded-full text-[10px] font-bold animate-pulse-soft">
@@ -47,8 +52,8 @@ export default function HomePage() {
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-white/[0.08] p-3 rounded-2xl border border-white/[0.08]">
-            <p className="text-[10px] opacity-60">미등원</p>
-            <p className="text-lg font-bold">{stats.absentCount}명</p>
+            <p className="text-[10px] opacity-60">알레르기 등록</p>
+            <p className="text-lg font-bold">{stats.allergyCount}명</p>
           </div>
           <div className="bg-white/[0.08] p-3 rounded-2xl border border-white/[0.08]">
             <p className="text-[10px] opacity-60">투약의뢰</p>
@@ -125,20 +130,39 @@ export default function HomePage() {
       {/* Timeline */}
       <div className="mb-8 stagger-item">
         <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2">
-          <TrendingUp size={16} /> 오늘의 활동
+          <TrendingUp size={16} /> 오늘의 일정
         </h3>
         <div className="relative ml-4 pl-6" style={{ borderLeft: '2px dashed #e2e8f0' }}>
-          {activities.map((act) => (
-            <div key={act.id} className="relative pb-5 last:pb-0">
-              <div
-                className="absolute top-1 w-[10px] h-[10px] bg-blue-600 rounded-full"
-                style={{ left: '-29px', border: '2px solid white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
-              />
-              <p className="text-[10px] font-bold text-blue-600 uppercase mb-[2px]">{act.time}</p>
-              <p className="text-sm font-bold text-slate-800">{act.title}</p>
-              <p className="text-xs text-slate-400">{act.description}</p>
+          {todaySchedules.length === 0 ? (
+            <div className="text-center py-6 opacity-30">
+              <p className="text-xs font-bold">오늘 예정된 일정이 없습니다.</p>
             </div>
-          ))}
+          ) : (
+            todaySchedules.map((s) => (
+              <div key={s.id} className={`relative pb-5 last:pb-0 ${s.isCompleted ? 'opacity-40' : ''}`}>
+                <div
+                  className="absolute top-1 w-[10px] h-[10px] rounded-full"
+                  style={{ 
+                    left: '-29px', 
+                    border: '2px solid white', 
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                    background: s.isCompleted ? '#cbd5e1' : '#2563eb' 
+                  }}
+                />
+                <p className={`text-[10px] font-bold uppercase mb-[2px] ${s.isCompleted ? 'text-slate-400' : 'text-blue-600'}`}>
+                  {s.startTime}
+                </p>
+                <p className={`text-sm font-bold ${s.isCompleted ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                  {s.title}
+                </p>
+                {s.description && (
+                  <p className={`text-xs ${s.isCompleted ? 'text-slate-300' : 'text-slate-400'}`}>
+                    {s.description}
+                  </p>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

@@ -4,8 +4,11 @@ import {
   useContext,
   useState,
   useCallback,
+  useEffect,
   type ReactNode,
 } from 'react';
+import { useAuth } from './AuthContext';
+import { studentsAPI, noticeAPI, scheduleAPI } from '../api/api';
 import type {
   Child,
   AttendanceRecord,
@@ -20,10 +23,7 @@ import type {
   DomainDetail,
 } from '../types';
 import {
-  MOCK_CHILDREN,
   MOCK_ATTENDANCE,
-  MOCK_SCHEDULES,
-  MOCK_NOTICES,
   MOCK_OBSERVATIONS,
   MOCK_DASHBOARD_STATS,
   MOCK_ACTIVITY_TIMELINE,
@@ -43,13 +43,14 @@ interface AppDataContextType {
 
   // Actions
   markAttendance: (childId: string, status: AttendanceRecord['status']) => void;
-  addNotice: (notice: Notice) => void;
+  addNotice: (notice: Partial<Notice>) => Promise<void>;
   generateAINotice: (
     childId: string,
     memo: string,
     lengthOption: 'short' | 'long',
     summaryContext: string
   ) => Promise<Notice>;
+  generateAICommonNotice: (content: string) => Promise<string>;
   generateBatchNotices: (
     childIds: string[],
     memo: string,
@@ -61,47 +62,132 @@ interface AppDataContextType {
   generateMonthlyReport: (childId: string, month: string) => Promise<MonthlyReport>;
   saveMonthlyReport: (report: MonthlyReport) => void;
   deleteMonthlyReport: (reportId: string) => void;
-  toggleScheduleComplete: (scheduleId: string) => void;
+  toggleScheduleComplete: (scheduleId: string) => Promise<void>;
+  addSchedule: (schedule: Partial<ScheduleItem>) => Promise<void>;
+  updateSchedule: (id: string, data: Partial<ScheduleItem>) => Promise<void>;
+  deleteSchedule: (id: string) => Promise<void>;
+  markNoticeAsRead: (noticeId: string) => Promise<void>;
+  updateChild: (id: string, data: Partial<Child>) => Promise<void>;
+  updateNotice: (id: string, data: Partial<Notice>) => Promise<void>;
+  deleteNotice: (id: string) => Promise<void>;
+  isLoading: boolean;
 }
 
 const AppDataContext = createContext<AppDataContextType | null>(null);
 
-// AI 알림장 생성 프롬프트 (mock)
-function generateNoticeContent(
-  childName: string,
-  memo: string,
-  lengthOption: 'short' | 'long',
-  summaryContext: string
-): string {
-  const intro = `${childName} 어머님, 아버님 안녕하세요! 😊\n`;
-  const summaryPart = summaryContext ? `오늘 저희 반에서는 ${summaryContext}\n\n` : '';
-  
-  let body = '';
-  if (memo) {
-    if (lengthOption === 'short') {
-      body = `오늘 ${childName}이는 ${memo}\n`;
-    } else {
-      body = `오늘 특별히 ${childName}이에 대해 말씀드리고 싶은 내용이 있어요. ${memo} 이러한 모습들을 통해 우리 ${childName}이가 한 뼘 더 성장해가고 있음을 느낍니다.\n`;
-    }
-  } else {
-    body = `오늘 ${childName}이는 친구들과 함께 하루를 잘 보냈습니다.\n`;
-  }
-
-  const outro = `\n항상 믿고 맡겨주셔서 감사합니다. 내일도 건강하고 밝은 모습으로 만나겠습니다!`;
-  
-  return intro + summaryPart + body + outro;
-}
 
 export function AppDataProvider({ children: childrenProp }: { children: ReactNode }) {
-  const [childrenData] = useState<Child[]>(MOCK_CHILDREN);
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>(MOCK_ATTENDANCE);
-  const [schedules, setSchedules] = useState<ScheduleItem[]>(MOCK_SCHEDULES);
-  const [notices, setNotices] = useState<Notice[]>(MOCK_NOTICES);
-  const [observations, setObservations] = useState<ObservationLog[]>(MOCK_OBSERVATIONS);
-  const [stats, setStats] = useState<DashboardStats>(MOCK_DASHBOARD_STATS);
-  const [activities] = useState<ActivityTimeline[]>(MOCK_ACTIVITY_TIMELINE);
-  const [meals] = useState<MealPlan[]>(MOCK_MEAL_PLANS);
+  const { isAuthenticated } = useAuth();
+  const [childrenData, setChildrenData] = useState<Child[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [observations, setObservations] = useState<ObservationLog[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalChildren: 0,
+    presentCount: 0,
+    absentCount: 0,
+    noticeCompleted: 0,
+    noticeTotal: 0,
+    observationCompleted: 0,
+    observationTotal: 0,
+    medicationRequests: 0,
+    allergyCount: 0,
+  });
+  const [activities, setActivities] = useState<ActivityTimeline[]>([]);
+  const [meals, setMeals] = useState<MealPlan[]>([]);
   const [monthlyReports, setMonthlyReports] = useState<MonthlyReport[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    if (isAuthenticated) {
+      setIsLoading(true);
+      const fetchData = async () => {
+        try {
+          const [studentRes, noticeRes, scheduleRes] = await Promise.all([
+            studentsAPI.getAll(),
+            noticeAPI.getAll(),
+            scheduleAPI.getAll()
+          ]);
+
+          if (!mounted) return;
+
+          let mappedChildren: Child[] = [];
+          if (studentRes.success && studentRes.students) {
+            mappedChildren = studentRes.students.map((s: Record<string, unknown>) => ({
+              id: String(s.id || ''),
+              name: String(s.name || s.kidsName || '이름 없음'),
+              age: 5,
+              classId: String(s.classId || 'c1'),
+              className: String(s.className || '햇살반'),
+              gender: (s.gender as 'male' | 'female') || 'female',
+              parentId: String(s.parentUid || ''),
+              parentName: '학부모님',
+              parentPhone: '000-0000-0000',
+              notes: (s.notes as string) || '',
+              birthDate: (s.birthDate as string) || '2020-01-01',
+              profileEmoji: (s.profileEmoji as string) || '👶',
+              profileImageUrl: (s.profileImageUrl as string) || undefined,
+              allergies: Array.isArray(s.allergies) ? s.allergies : [],
+              traits: Array.isArray(s.traits) ? s.traits : [],
+              medicationRequest: s.medicationRequest !== undefined ? String(s.medicationRequest) : null,
+            } as Child));
+            setChildrenData(mappedChildren);
+          }
+
+          if (noticeRes.success && noticeRes.notices) {
+            const sortedNotices = [...noticeRes.notices].sort((a, b) => {
+              const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              return timeB - timeA;
+            });
+            setNotices(sortedNotices);
+          }
+
+          if (scheduleRes.success && scheduleRes.schedules) {
+            setSchedules(scheduleRes.schedules);
+          }
+
+          // 초기화 (Mock 데이터 기반 항목들 및 통계)
+          setAttendance(MOCK_ATTENDANCE);
+          setObservations(MOCK_OBSERVATIONS);
+          setActivities(MOCK_ACTIVITY_TIMELINE);
+          setMeals(MOCK_MEAL_PLANS);
+
+          // 통계 통합 계산
+          const today = new Date().toISOString().split('T')[0];
+          const noticeCompleted = (noticeRes.notices || []).filter(n => n.type === 'individual' && n.date === today && n.isSent).length;
+          const observationCompleted = MOCK_OBSERVATIONS.filter(o => o.date === today).length;
+          
+          setStats({
+            totalChildren: mappedChildren.length,
+            presentCount: MOCK_DASHBOARD_STATS.presentCount,
+            absentCount: MOCK_DASHBOARD_STATS.absentCount,
+            noticeCompleted,
+            noticeTotal: mappedChildren.length,
+            observationCompleted,
+            observationTotal: mappedChildren.length,
+            medicationRequests: mappedChildren.filter(c => c.medicationRequest && c.medicationRequest.trim() !== '').length,
+            allergyCount: mappedChildren.filter(c => c.allergies && c.allergies.length > 0).length,
+          });
+
+        } catch (err) {
+          console.error("Failed to load application data", err);
+        } finally {
+          if (mounted) setIsLoading(false);
+        }
+      };
+
+      fetchData();
+    } else {
+      setChildrenData([]);
+      setNotices([]);
+      setIsLoading(false);
+    }
+    return () => { mounted = false; };
+  }, [isAuthenticated]);
+
 
   const markAttendance = useCallback(
     (childId: string, status: AttendanceRecord['status']) => {
@@ -135,8 +221,16 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
     [],
   );
 
-  const addNotice = useCallback((notice: Notice) => {
-    setNotices((prev) => [notice, ...prev]);
+  const addNotice = useCallback(async (notice: Partial<Notice>) => {
+    try {
+      const res = await noticeAPI.create(notice);
+      if (res.success && res.notice) {
+        setNotices((prev) => [res.notice, ...prev]);
+      }
+    } catch (error) {
+       console.error("Failed to save notice to DB", error);
+       throw error;
+    }
   }, []);
 
   const generateAINotice = useCallback(
@@ -146,29 +240,59 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
       lengthOption: 'short' | 'long',
       summaryContext: string
     ): Promise<Notice> => {
-      await new Promise((r) => setTimeout(r, 1200));
       const child = childrenData.find((c) => c.id === childId);
-      const content = generateNoticeContent(
-        child?.name ?? '아이',
-        memo,
-        lengthOption,
-        summaryContext
-      );
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/report/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          childName: child?.name || '아이',
+          commonActivities: summaryContext || '오늘 활동은 무사히 마쳤습니다.',
+          specialNote: memo,
+          length: lengthOption
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || '알림장 생성에 실패했습니다.');
+      }
+
       const notice: Notice = {
         id: `n-${Date.now()}`,
         type: 'individual',
         childId,
         childName: child?.name,
         title: `${new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric'})} ${child?.name} 알림장`,
-        content,
+        content: data.report,
         date: new Date().toISOString().split('T')[0],
         isRead: false,
         isSent: false,
       };
+      
       return notice;
     },
     [childrenData],
   );
+
+  const generateAICommonNotice = useCallback(
+    async (content: string): Promise<string> => {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/report/common/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || '공통 알림장 생성에 실패했습니다.');
+      }
+
+      return data.report;
+    },
+    []
+  );
+
 
   const generateBatchNotices = useCallback(
     async (
@@ -177,29 +301,12 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
       lengthOption: 'short' | 'long',
       summaryContext: string
     ): Promise<Notice[]> => {
-      await new Promise((r) => setTimeout(r, 2000));
-      const newNotices: Notice[] = childIds.map((childId) => {
-        const child = childrenData.find((c) => c.id === childId);
-        return {
-          id: `n-${Date.now()}-${childId}`,
-          type: 'individual' as const,
-          childId,
-          childName: child?.name,
-          title: `${new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric'})} ${child?.name} 알림장`,
-          content: generateNoticeContent(
-            child?.name ?? '아이',
-            memo,
-            lengthOption,
-            summaryContext
-          ),
-          date: new Date().toISOString().split('T')[0],
-          isRead: false,
-          isSent: false,
-        };
-      });
-      return newNotices;
+      const promises = childIds.map(childId => 
+        generateAINotice(childId, memo, lengthOption, summaryContext)
+      );
+      return await Promise.all(promises);
     },
-    [childrenData],
+    [generateAINotice],
   );
 
   const addObservation = useCallback((observation: ObservationLog) => {
@@ -282,12 +389,109 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
     setMonthlyReports((prev) => prev.filter((r) => r.id !== reportId));
   }, []);
 
-  const toggleScheduleComplete = useCallback((scheduleId: string) => {
-    setSchedules((prev) =>
-      prev.map((s) =>
-        s.id === scheduleId ? { ...s, isCompleted: !s.isCompleted } : s,
-      ),
-    );
+  const toggleScheduleComplete = useCallback(async (scheduleId: string) => {
+    const schedule = schedules.find((s) => s.id === scheduleId);
+    if (!schedule) return;
+
+    const newStatus = !schedule.isCompleted;
+    try {
+      await scheduleAPI.update(scheduleId, { isCompleted: newStatus });
+      setSchedules((prev) =>
+        prev.map((s) =>
+          s.id === scheduleId ? { ...s, isCompleted: newStatus } : s,
+        ),
+      );
+    } catch (error) {
+      console.error("Failed to update schedule status", error);
+    }
+  }, [schedules]);
+
+  const addSchedule = useCallback(async (schedule: Partial<ScheduleItem>) => {
+    try {
+      const res = await scheduleAPI.create(schedule);
+      if (res.success && res.schedule) {
+        setSchedules((prev) => [...prev, res.schedule]);
+      }
+    } catch (error) {
+      console.error("Failed to add schedule", error);
+      throw error;
+    }
+  }, []);
+
+  const updateSchedule = useCallback(async (id: string, data: Partial<ScheduleItem>) => {
+    try {
+      await scheduleAPI.update(id, data);
+      setSchedules((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, ...data } : s))
+      );
+    } catch (error) {
+      console.error("Failed to update schedule", error);
+      throw error;
+    }
+  }, []);
+
+  const deleteSchedule = useCallback(async (id: string) => {
+    try {
+      await scheduleAPI.delete(id);
+      setSchedules((prev) => prev.filter((s) => s.id !== id));
+    } catch (error) {
+      console.error("Failed to delete schedule", error);
+      throw error;
+    }
+  }, []);
+
+  const markNoticeAsRead = useCallback(async (noticeId: string) => {
+    try {
+      await noticeAPI.markAsRead(noticeId);
+      setNotices((prev) =>
+        prev.map((n) => (n.id === noticeId ? { ...n, isRead: true } : n))
+      );
+    } catch (error) {
+      console.error("Failed to mark notice as read", error);
+    }
+  }, []);
+
+  const updateNotice = useCallback(async (id: string, data: Partial<Notice>) => {
+    try {
+      await noticeAPI.update(id, data);
+      setNotices((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, ...data } : n))
+      );
+    } catch (error) {
+      console.error("Failed to update notice", error);
+      throw error;
+    }
+  }, []);
+
+  const deleteNotice = useCallback(async (id: string) => {
+    try {
+      await noticeAPI.delete(id);
+      setNotices((prev) => prev.filter((n) => n.id !== id));
+      
+      setStats(prev => {
+        const deletedNotice = notices.find(n => n.id === id);
+        const today = new Date().toISOString().split('T')[0];
+        if (deletedNotice && deletedNotice.date === today && deletedNotice.isSent && deletedNotice.type === 'individual') {
+          return { ...prev, noticeCompleted: Math.max(0, prev.noticeCompleted - 1) };
+        }
+        return prev;
+      });
+    } catch (error) {
+      console.error("Failed to delete notice", error);
+      throw error;
+    }
+  }, [notices]);
+
+  const updateChild = useCallback(async (id: string, data: Partial<Child>) => {
+    try {
+      await studentsAPI.update(id, data);
+      setChildrenData((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, ...data } : c))
+      );
+    } catch (error) {
+      console.error("Failed to update child info", error);
+      throw error;
+    }
   }, []);
 
   return (
@@ -305,13 +509,22 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
         markAttendance,
         addNotice,
         generateAINotice,
+        generateAICommonNotice,
         generateBatchNotices,
+        addSchedule,
+        updateSchedule,
+        deleteSchedule,
         addObservation,
         generateAIObservation,
         generateMonthlyReport,
         saveMonthlyReport,
         deleteMonthlyReport,
         toggleScheduleComplete,
+        markNoticeAsRead,
+        updateChild,
+        updateNotice,
+        deleteNotice,
+        isLoading,
       }}
     >
       {childrenProp}
