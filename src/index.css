@@ -47,12 +47,30 @@
   50% { opacity: 0.6; }
 }
 
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes slide-up-fade {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
 @utility animate-fade-in {
   animation: fade-in 0.25s ease forwards;
 }
 
 @utility animate-fade-in-up {
   animation: fade-in-up 0.4s ease forwards;
+}
+
+@utility animate-slide-up {
+  animation: slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@utility animate-slide-up-fade {
+  animation: slide-up-fade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @utility animate-scale-in {
