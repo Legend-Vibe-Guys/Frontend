@@ -16,10 +16,16 @@ import ParentNoticePage from '../pages/parent/ParentNoticePage';
 // 공통 페이지 (로그인)
 import LoginPage from '../pages/auth/LoginPage';
 
+import SignupPage from '../pages/auth/SignupPage';
+
 const router = createBrowserRouter([
   {
     path: PATH.LOGIN,
     element: <LoginPage />,
+  },
+  {
+    path: PATH.SIGNUP,
+    element: <SignupPage />,
   },
 
   // 1. 교사 경로 그룹
