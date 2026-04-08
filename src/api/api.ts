@@ -1,9 +1,7 @@
-/**
- * Mock API 서비스 레이어
- * 백엔드 연동 시 이 파일만 실제 API 호출로 교체하면 됩니다.
- */
+import { auth } from '../config/firebase';
+import type { ApiError } from '../types';
 
-const API_BASE = '/api/v1';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 // 이후 백엔드 연동 시 사용할 fetch wrapper
 async function request<T>(
@@ -11,24 +9,41 @@ async function request<T>(
   options?: RequestInit,
 ): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
+  
+  let token = null;
+  if (auth.currentUser) {
+    try {
+      token = await auth.currentUser.getIdToken();
+    } catch (e) {
+      console.warn("Failed to get Firebase ID token:", e);
+    }
+  }
+
   const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
-      // Authorization: `Bearer ${getToken()}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
     ...options,
   });
-  if (!res.ok) throw new Error(`API Error: ${res.status}`);
-  return res.json();
+  
+  if (!res.ok) {
+    const error = new Error(`API Error: ${res.status}`) as ApiError;
+    error.status = res.status;
+    throw error;
+  }
+  
+  // Return null or empty if no content, else parse JSON
+  const text = await res.text();
+  return text ? JSON.parse(text) : ({} as T);
 }
 
 // ── Auth API ──
 export const authAPI = {
-  login: (email: string, password: string, role: string) =>
+  login: () =>
     request('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password, role }),
     }),
   signup: (data: Record<string, unknown>) =>
     request('/auth/signup', {

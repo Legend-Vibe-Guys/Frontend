@@ -1,6 +1,10 @@
 // ── 사용자 / 인증 ──
 export type UserRole = 'teacher' | 'parent';
 
+export interface ApiError extends Error {
+  status?: number;
+}
+
 export interface User {
   id: string;
   name: string;
