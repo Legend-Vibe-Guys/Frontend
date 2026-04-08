@@ -38,8 +38,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="w-full min-h-dvh p-5 bg-gradient-to-b from-blue-50 to-slate-100 py-10 overflow-y-auto flex">
-      <div className="w-full max-w-[500px] bg-white rounded-[32px] shadow-2xl p-[50px] sm:p-[60px] flex flex-col relative m-auto animate-fade-in">
+    <div className="w-full h-dvh px-5 py-10 bg-gradient-to-b from-blue-50 to-slate-100 overflow-y-auto flex flex-col">
+      <div className="w-full max-w-[500px] bg-white rounded-[32px] shadow-2xl p-8 sm:p-12 flex flex-col relative my-auto mx-auto flex-shrink-0 animate-fade-in">
         {/* Logo Start */}
         <div className="w-[72px] h-[72px] bg-gradient-to-br from-blue-600 to-purple-600 rounded-[20px] mx-auto mb-6 flex items-center justify-center text-4xl shadow-lg shadow-blue-600/20">
           🌱

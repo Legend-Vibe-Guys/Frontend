@@ -58,8 +58,8 @@ export default function SignupPage() {
   const inputClass = "w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-[16px] text-slate-700 outline-none transition-all placeholder:text-slate-300 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" as const;
 
   return (
-    <div className="w-full min-h-dvh p-5 bg-gradient-to-b from-blue-50 to-slate-100 py-10 overflow-y-auto flex">
-      <div className="w-full max-w-[500px] bg-white rounded-[32px] shadow-2xl p-[40px] sm:p-[60px] flex flex-col relative m-auto animate-fade-in">
+    <div className="w-full h-dvh px-5 py-10 bg-gradient-to-b from-blue-50 to-slate-100 overflow-y-auto flex flex-col">
+      <div className="w-full max-w-[500px] bg-white rounded-[32px] shadow-2xl p-8 sm:p-12 flex flex-col relative my-auto mx-auto flex-shrink-0 animate-fade-in">
         <h2 className="text-[24px] font-black text-slate-900 text-center tracking-tight mb-2">반가워요! 🌱</h2>
         <p className="text-[15px] text-slate-400 text-center mb-8 break-keep">
           서비스 이용을 위한 추가 정보가 필요합니다.
