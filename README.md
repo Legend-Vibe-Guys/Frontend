@@ -26,7 +26,14 @@
    pnpm install
    ```
 
-3. **로컬 개발 서버 실행**
+3. **환경 변수 설정 (.env)**
+   프로젝트 루트에 위치한 `.env.example` 파일을 복사하여 `.env` 파일을 생성합니다.
+   ```bash
+   cp .env.example .env
+   ```
+   생성된 `.env` 파일에 Firebase 연동 키 값 등 필요한 환경 변수를 채워 넣어주세요.
+
+4. **로컬 개발 서버 실행**
    ```bash
    pnpm dev
    ```

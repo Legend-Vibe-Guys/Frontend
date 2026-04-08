@@ -1,6 +1,7 @@
 export const PATH = {
   ROOT: '/',
   LOGIN: '/login',
+  SIGNUP: '/signup',
 
   // 교사 전용 경로
   TEACHER: {
