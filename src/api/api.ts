@@ -1,5 +1,5 @@
 import { auth } from '../config/firebase';
-import type { ApiError, Notice, Child } from '../types';
+import type { ApiError, Notice, Child, ScheduleItem } from '../types';
 
 export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -153,12 +153,18 @@ export const observationAPI = {
 
 // ── Schedule API ──
 export const scheduleAPI = {
-  getByDate: (date: string) => request(`/schedules?date=${date}`),
-  update: (id: string, data: Record<string, unknown>) =>
-    request(`/schedules/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
+  getAll: (date?: string) => request<{ success: boolean; schedules: ScheduleItem[] }>(`/schedules${date ? `?date=${date}` : ''}`),
+  create: (data: Partial<ScheduleItem>) => request<{ success: boolean; schedule: ScheduleItem }>('/schedules', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  update: (id: string, data: Partial<ScheduleItem>) => request<{ success: boolean; message: string }>(`/schedules/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  }),
+  delete: (id: string) => request<{ success: boolean; message: string }>(`/schedules/${id}`, {
+    method: 'DELETE',
+  }),
 };
 
 // ── Meal API ──

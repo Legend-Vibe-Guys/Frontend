@@ -1,6 +1,6 @@
 import { useAuth, useAppData } from '../../hooks';
 import { formatDateKorean } from '../../utils/date';
-import { Heart, BookOpen, MessageCircle } from 'lucide-react';
+import { Heart, BookOpen, MessageCircle, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PATH } from '../../router/Path';
 import { API_BASE } from '../../api/api';
@@ -14,7 +14,7 @@ const getFullImageUrl = (url?: string) => {
 export default function ParentHomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { children, observations, notices } = useAppData();
+  const { children, observations, notices, schedules } = useAppData();
 
   const myChild = children[0];
 
@@ -28,6 +28,11 @@ export default function ParentHomePage() {
 
   const childObservations = observations.filter((o) => o.childId === myChild.id);
   const childNotices = notices.filter((n) => n.type === 'individual' && n.childId === myChild.id);
+
+  const today = new Date().toISOString().split('T')[0];
+  const todaySchedules = schedules
+    .filter((s) => s.date === today)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   return (
     <div className="p-6 pb-28 animate-fade-in">
@@ -64,7 +69,6 @@ export default function ParentHomePage() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         {[
-          { icon: Heart, label: '건강 상태', value: '좋음 😊', bg: 'bg-pink-50', color: 'text-pink-500' },
           { icon: BookOpen, label: '관찰일지', value: `${childObservations.length}건`, bg: 'bg-purple-50', color: 'text-purple-500' },
           { icon: MessageCircle, label: '알림장', value: `${childNotices.length}건`, bg: 'bg-emerald-50', color: 'text-emerald-500' },
         ].map(({ icon: Icon, label, value, bg, color }, i) => (
@@ -74,6 +78,45 @@ export default function ParentHomePage() {
             <p className="text-base font-black text-slate-800">{value}</p>
           </div>
         ))}
+      </div>
+
+      {/* Today's Schedule (Timeline) */}
+      <div className="mb-8 stagger-item">
+        <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2">
+          <TrendingUp size={16} /> 오늘의 일정
+        </h3>
+        <div className="relative ml-4 pl-6" style={{ borderLeft: '2px dashed #e2e8f0' }}>
+          {todaySchedules.length === 0 ? (
+            <div className="text-center py-6 opacity-30">
+              <p className="text-xs font-bold">오늘 예정된 일정이 없습니다.</p>
+            </div>
+          ) : (
+            todaySchedules.map((s) => (
+              <div key={s.id} className={`relative pb-5 last:pb-0 ${s.isCompleted ? 'opacity-40' : ''}`}>
+                <div
+                  className="absolute top-1 w-[10px] h-[10px] rounded-full"
+                  style={{ 
+                    left: '-29px', 
+                    border: '2px solid white', 
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                    background: s.isCompleted ? '#cbd5e1' : '#2563eb' 
+                  }}
+                />
+                <p className={`text-[10px] font-bold uppercase mb-[2px] ${s.isCompleted ? 'text-slate-400' : 'text-blue-600'}`}>
+                  {s.startTime}
+                </p>
+                <p className={`text-sm font-bold ${s.isCompleted ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                  {s.title}
+                </p>
+                {s.description && (
+                  <p className={`text-xs ${s.isCompleted ? 'text-slate-300' : 'text-slate-400'}`}>
+                    {s.description}
+                  </p>
+                )}
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {childNotices.length > 0 && (
