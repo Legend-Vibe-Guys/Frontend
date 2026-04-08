@@ -29,7 +29,8 @@ async function request<T>(
   });
   
   if (!res.ok) {
-    const error = new Error(`API Error: ${res.status}`) as ApiError;
+    const errorData = await res.json().catch(() => ({}));
+    const error = new Error(errorData.message || `API Error: ${res.status}`) as ApiError;
     error.status = res.status;
     throw error;
   }
