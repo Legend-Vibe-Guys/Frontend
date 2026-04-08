@@ -15,7 +15,6 @@ import type {
   DashboardStats,
   ActivityTimeline,
   MealPlan,
-  CushionLevel,
 } from '../types';
 import {
   MOCK_CHILDREN,
@@ -43,15 +42,15 @@ interface AppDataContextType {
   addNotice: (notice: Notice) => void;
   generateAINotice: (
     childId: string,
-    keywords: string[],
     memo: string,
-    cushionLevel: CushionLevel,
+    lengthOption: 'short' | 'long',
+    summaryContext: string
   ) => Promise<Notice>;
   generateBatchNotices: (
     childIds: string[],
-    keywords: string[],
     memo: string,
-    cushionLevel: CushionLevel,
+    lengthOption: 'short' | 'long',
+    summaryContext: string
   ) => Promise<Notice[]>;
   addObservation: (observation: ObservationLog) => void;
   generateAIObservation: (childId: string, photoFile?: File) => Promise<ObservationLog>;
@@ -63,72 +62,27 @@ const AppDataContext = createContext<AppDataContextType | null>(null);
 // AI 알림장 생성 프롬프트 (mock)
 function generateNoticeContent(
   childName: string,
-  keywords: string[],
   memo: string,
-  cushionLevel: CushionLevel,
+  lengthOption: 'short' | 'long',
+  summaryContext: string
 ): string {
-  const cushionPhrases = {
-    soft: [
-      '오늘도 사랑스러운',
-      '멋지게 성장하고 있는',
-      '항상 밝은 모습의',
-    ],
-    medium: ['', '오늘 하루도 잘 보낸', '열심히 활동한'],
-    strong: ['', '', ''],
-  };
-  const phrases = cushionPhrases[cushionLevel];
-  const intro = phrases[Math.floor(Math.random() * phrases.length)];
-
-  const keywordSentences: Record<string, string[]> = {
-    식사: [
-      `${childName}이(가) 점심을 맛있게 잘 먹었답니다.`,
-      `식사 시간에 골고루 먹으려고 노력하는 모습이 보였어요.`,
-    ],
-    수면: [
-      `낮잠 시간에 편안하게 잘 쉬었어요.`,
-      `충분한 휴식을 취한 후 오후 활동에 활발하게 참여했습니다.`,
-    ],
-    놀이: [
-      `자유놀이 시간에 친구들과 즐겁게 놀았습니다.`,
-      `상상력을 발휘하며 창의적인 놀이를 했어요.`,
-    ],
-    사회성: [
-      `친구들과 사이좋게 어울리며 함께 활동했습니다.`,
-      `다른 친구에게 먼저 다가가 도움을 주는 모습이 보였어요.`,
-    ],
-    양보: [
-      `친구에게 장난감을 양보하는 멋진 모습을 보여주었답니다.`,
-    ],
-    야외활동: [
-      `야외 활동에서 자연을 탐구하며 즐거운 시간을 보냈어요.`,
-    ],
-    협동: [
-      `친구들과 힘을 합쳐 활동을 완성하는 모습이 인상적이었어요.`,
-    ],
-  };
-
+  const intro = `${childName} 어머님, 아버님 안녕하세요! 😊\n`;
+  const summaryPart = summaryContext ? `오늘 저희 반에서는 ${summaryContext}\n\n` : '';
+  
   let body = '';
-  keywords.forEach((kw) => {
-    const sentences = keywordSentences[kw];
-    if (sentences) {
-      body += sentences[Math.floor(Math.random() * sentences.length)] + ' ';
-    }
-  });
-
   if (memo) {
-    body += memo + ' ';
+    if (lengthOption === 'short') {
+      body = `오늘 ${childName}이는 ${memo}\n`;
+    } else {
+      body = `오늘 특별히 ${childName}이에 대해 말씀드리고 싶은 내용이 있어요. ${memo} 이러한 모습들을 통해 우리 ${childName}이가 한 뼘 더 성장해가고 있음을 느낍니다.\n`;
+    }
+  } else {
+    body = `오늘 ${childName}이는 친구들과 함께 하루를 잘 보냈습니다.\n`;
   }
 
-  if (!body.trim()) {
-    body = `${childName}이(가) 오늘 하루도 건강하게 잘 보냈습니다. `;
-  }
-
-  const content =
-    (intro ? `${intro} ${childName}! ` : '') +
-    body.trim() +
-    '\n\n내일도 즐거운 하루 보내요! 😊';
-
-  return content;
+  const outro = `\n항상 믿고 맡겨주셔서 감사합니다. 내일도 건강하고 밝은 모습으로 만나겠습니다!`;
+  
+  return intro + summaryPart + body + outro;
 }
 
 export function AppDataProvider({ children: childrenProp }: { children: ReactNode }) {
@@ -180,36 +134,30 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
   const generateAINotice = useCallback(
     async (
       childId: string,
-      keywords: string[],
       memo: string,
-      cushionLevel: CushionLevel,
+      lengthOption: 'short' | 'long',
+      summaryContext: string
     ): Promise<Notice> => {
       await new Promise((r) => setTimeout(r, 1200));
       const child = childrenData.find((c) => c.id === childId);
       const content = generateNoticeContent(
         child?.name ?? '아이',
-        keywords,
         memo,
-        cushionLevel,
+        lengthOption,
+        summaryContext
       );
       const notice: Notice = {
         id: `n-${Date.now()}`,
         type: 'individual',
         childId,
         childName: child?.name,
-        title: '오늘의 하루',
+        title: `${new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric'})} ${child?.name} 알림장`,
         content,
         date: new Date().toISOString().split('T')[0],
         isRead: false,
         isSent: false,
-        keywords,
-        cushionLevel,
       };
-      setNotices((prev) => [notice, ...prev]);
-      setStats((prev) => ({
-        ...prev,
-        noticeCompleted: prev.noticeCompleted + 1,
-      }));
+      // setNotices 제거: 개별 알림장은 확인 후 전송 버튼에서 수동 등록하도록 UX 개선
       return notice;
     },
     [childrenData],
@@ -218,9 +166,9 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
   const generateBatchNotices = useCallback(
     async (
       childIds: string[],
-      keywords: string[],
       memo: string,
-      cushionLevel: CushionLevel,
+      lengthOption: 'short' | 'long',
+      summaryContext: string
     ): Promise<Notice[]> => {
       await new Promise((r) => setTimeout(r, 2000));
       const newNotices: Notice[] = childIds.map((childId) => {
@@ -230,25 +178,18 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
           type: 'individual' as const,
           childId,
           childName: child?.name,
-          title: '오늘의 하루',
+          title: `${new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric'})} ${child?.name} 알림장`,
           content: generateNoticeContent(
             child?.name ?? '아이',
-            keywords,
             memo,
-            cushionLevel,
+            lengthOption,
+            summaryContext
           ),
           date: new Date().toISOString().split('T')[0],
           isRead: false,
           isSent: false,
-          keywords,
-          cushionLevel,
         };
       });
-      setNotices((prev) => [...newNotices, ...prev]);
-      setStats((prev) => ({
-        ...prev,
-        noticeCompleted: prev.noticeCompleted + newNotices.length,
-      }));
       return newNotices;
     },
     [childrenData],

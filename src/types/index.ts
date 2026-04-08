@@ -68,6 +68,7 @@ export interface Notice {
   date: string;
   isRead: boolean;
   isSent: boolean;
+  photoUrl?: string;
   keywords?: string[];
   cushionLevel?: CushionLevel;
 }
