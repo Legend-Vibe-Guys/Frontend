@@ -518,6 +518,7 @@ export const MOCK_OBSERVATIONS: ObservationLog[] = [
     ],
     content:
       '민준이는 자유놀이 시간에 블록 영역에서 친구 2명과 함께 성을 만들었습니다. 블록을 나누어 쓰며 "네가 이거 해" 라고 역할을 분배하는 모습이 관찰되었습니다.',
+    evaluation: '또래와의 상호작용이 긍정적이며, 규칙을 준수하려는 태도가 관찰됩니다.',
     isAIGenerated: true,
   },
   {
@@ -532,6 +533,7 @@ export const MOCK_OBSERVATIONS: ObservationLog[] = [
       },
     ],
     content: '지호는 야외 숲 체험 시간에 나뭇잎 아래의 벌레를 발견하고 친구들에게 알려주었습니다.',
+    evaluation: '자연 환경에 대한 호기심이 높으며 관찰력이 뛰어납니다.',
     isAIGenerated: true,
   },
 ];

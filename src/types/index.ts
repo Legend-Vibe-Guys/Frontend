@@ -108,13 +108,30 @@ export interface ObservationLog {
   date: string;
   photoUrl?: string;
   categories: ObservationCategory[];
-  content: string;
+  content: string;      // 관찰 내용 (사실)
+  evaluation: string;   // 관찰 평가 (해석)
   isAIGenerated: boolean;
 }
 
 export interface ObservationCategory {
   name: string;
   analysis: string;
+}
+
+export type NuriDomain = '신체운동·건강' | '의사소통' | '사회관계' | '예술경험' | '자연탐구';
+
+export interface DomainDetail {
+  content: string;
+  evaluation: string;
+}
+
+export interface MonthlyReport {
+  id: string;
+  childId: string;
+  childName: string;
+  reportMonth: string;
+  details: Record<string, DomainDetail>;
+  isSaved: boolean;
 }
 
 // ── 식단 ──
