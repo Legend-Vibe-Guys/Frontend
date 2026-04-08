@@ -128,8 +128,9 @@ export default function NoticePage() {
     try {
       const generated = await generateAICommonNotice(commonContent);
       setCommonContent(generated);
-    } catch (error: any) {
-      alert(error.message || 'AI 초안 생성 중 오류가 발생했습니다.');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'AI 초안 생성 중 오류가 발생했습니다.';
+      alert(errorMessage);
     } finally {
       setIsCommonGenerating(false);
     }

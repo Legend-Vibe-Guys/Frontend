@@ -1,5 +1,5 @@
 import { auth } from '../config/firebase';
-import type { ApiError, Notice } from '../types';
+import type { ApiError, Notice, Child } from '../types';
 
 export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -20,7 +20,7 @@ async function request<T>(
   const headers: Record<string, string> = {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options?.headers,
-  } as any;
+  } as Record<string, string>;
 
   if (!isFormData && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
@@ -64,7 +64,7 @@ export const studentsAPI = {
     method: 'PUT',
     body: JSON.stringify({ traits })
   }),
-  update: (id: string, data: any) =>
+  update: (id: string, data: Partial<Child>) =>
     request<{ success: boolean; message: string }>(`/students/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
