@@ -53,11 +53,17 @@ export default function NoticePage() {
   const allChildren = children; // 모든 원아 표시 요구사항 반영
   const commonNotices = notices
     .filter((n) => n.type === 'common')
-    .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+    .sort((a, b) => {
+      if (a.createdAt && b.createdAt) return b.createdAt.localeCompare(a.createdAt);
+      return b.date.localeCompare(a.date) || b.id.localeCompare(a.id);
+    });
     
   const individualNotices = notices
     .filter((n) => n.type === 'individual')
-    .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+    .sort((a, b) => {
+      if (a.createdAt && b.createdAt) return b.createdAt.localeCompare(a.createdAt);
+      return b.date.localeCompare(a.date) || b.id.localeCompare(a.id);
+    });
 
   const todayString = formatDateISO();
   const completedIndividualChildIds = new Set(individualNotices.filter(n => n.date === todayString).map(n => n.childId));
