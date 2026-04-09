@@ -14,17 +14,14 @@ export const MOCK_CHILDREN: Child[] = [
 ];
 
 // ── 출석 기록 ──
-export const MOCK_ATTENDANCE: AttendanceRecord[] = MOCK_CHILDREN.map(
-  (child, i) => ({
-    id: `att-${child.id}`,
-    childId: child.id,
-    date: '2026-04-07',
-    status:
-      i < 18 ? ('present' as const) : ('absent' as const),
-    arrivalTime: i < 18 ? `09:${String(5 + i * 3).padStart(2, '0')}` : undefined,
-    reason: i === 18 ? '체험학습' : i === 19 ? '병결' : undefined,
-  }),
-);
+export const MOCK_ATTENDANCE: AttendanceRecord[] = MOCK_CHILDREN.map((child, i) => ({
+  id: `att-${child.id}`,
+  childId: child.id,
+  date: '2026-04-07',
+  status: i < 18 ? ('present' as const) : ('absent' as const),
+  arrivalTime: i < 18 ? `09:${String(5 + i * 3).padStart(2, '0')}` : undefined,
+  reason: i === 18 ? '체험학습' : i === 19 ? '병결' : undefined,
+}));
 
 // ── 일정 ──
 export const MOCK_SCHEDULES: ScheduleItem[] = [
@@ -48,7 +45,7 @@ export const MOCK_DASHBOARD_STATS: DashboardStats = {
   observationCompleted: 5,
   observationTotal: 20,
   medicationRequests: 1,
-  allergyCount: 0, // :point_left:
+  allergyCount: 0,
 };
 
 // ── 활동 타임라인 ──
