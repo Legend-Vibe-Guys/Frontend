@@ -35,7 +35,10 @@ export default function ParentHomePage() {
     
   const childNotices = notices
     .filter((n) => n.type === 'individual' && n.childId === myChild.id)
-    .sort((a, b) => b.date.localeCompare(a.date));
+    .sort((a, b) => {
+      if (a.createdAt && b.createdAt) return b.createdAt.localeCompare(a.createdAt);
+      return b.date.localeCompare(a.date);
+    });
 
   const today = formatDateISO();
   const todaySchedules = schedules

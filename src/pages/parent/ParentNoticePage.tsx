@@ -21,11 +21,15 @@ export default function ParentNoticePage() {
   const individualNotices = notices.filter((n) => n.type === 'individual' && childIds.includes(n.childId || ''));
   
   const currentList = [...(tab === 'common' ? commonNotices : individualNotices)].sort((a, b) => {
-    // 날짜 역순 (최신순)
+    // 1. 생성일시 역순 (최신순) - 정확한 시간 기준
+    if (a.createdAt && b.createdAt) {
+      return b.createdAt.localeCompare(a.createdAt);
+    }
+    // 2. 생성일시가 없으면 날짜 역순
     if (a.date !== b.date) {
       return b.date.localeCompare(a.date);
     }
-    // 같은 날짜면 ID 역순 (보통 생성순)
+    // 3. 마지막 수단으로 ID 역순
     return b.id.localeCompare(a.id);
   });
 
