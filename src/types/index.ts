@@ -108,9 +108,27 @@ export interface ObservationLog {
   date: string;
   photoUrl?: string;
   categories: ObservationCategory[];
-  content: string;      // 관찰 내용 (사실)
-  evaluation: string;   // 관찰 평가 (해석)
+  content: string;      // 관찰 내용
+  evaluation: string;   // 관찰 평가 
+  rawMemo?: string;     // AI 생성 시 사용된 원문 메모 
   isAIGenerated: boolean;
+}
+
+export interface ObservationRecord {
+  id?: string;
+  childId: string;
+  teacherId: string;
+  childName: string;
+  memo: string;
+  category: string;
+  observationContent: string;
+  observationEvaluation: string;
+  date: string;
+  createdAt?: string;
+  content?: string;     // UI용 매핑 필드
+  evaluation?: string;  // UI용 매핑 필드
+  categories?: ObservationCategory[]; // 매핑용 필드
+  isAIGenerated?: boolean;            // 매핑용 필드
 }
 
 export interface ObservationCategory {

@@ -1,5 +1,5 @@
 import { auth } from '../config/firebase';
-import type { ApiError, Notice, Child, ScheduleItem } from '../types';
+import type { ApiError, Notice, Child, ScheduleItem, ObservationRecord } from '../types';
 
 export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -134,21 +134,30 @@ export const noticeAPI = {
     request(`/notices/${noticeId}/send`, { method: 'POST' }),
 };
 
-// ── Observation API (핵심 - API화 가능) ──
+// ── Observation API ──
 export const observationAPI = {
-  generate: (childId: string, photo: File) => {
-    const formData = new FormData();
-    formData.append('childId', childId);
-    formData.append('photo', photo);
-    return request('/observations/generate', {
+  // AI 관찰일지 초안 생성
+  generateDraft: (data: { childName: string; memo: string; category: string }) =>
+    request<{ observationContent: string; observationEvaluation: string }>('/observations/generate-draft', {
       method: 'POST',
-      body: formData,
-      headers: {}, // Let browser set Content-Type for FormData
-    });
+      body: JSON.stringify(data),
+    }),
+
+  // 관찰일지 저장
+  create: (data: Partial<ObservationRecord>) =>
+    request<{ success: boolean; id: string }>('/observations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 관찰일지 목록 조회 (필터링)
+  getAll: (filters: { childId?: string; category?: string; date?: string } = {}) => {
+    const params = new URLSearchParams();
+    if (filters.childId) params.append('childId', filters.childId);
+    if (filters.category) params.append('category', filters.category);
+    if (filters.date) params.append('date', filters.date);
+    return request<{ success: boolean; observations: ObservationRecord[] }>(`/observations?${params.toString()}`);
   },
-  getAll: () => request('/observations'),
-  getByChild: (childId: string) =>
-    request(`/observations?childId=${childId}`),
 };
 
 // ── Schedule API ──
