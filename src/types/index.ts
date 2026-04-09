@@ -94,7 +94,8 @@ export interface Notice {
   date: string;
   isRead: boolean;
   isSent: boolean;
-  photoUrl?: string;
+  photoUrl?: string; // 기존 호환성용
+  photoUrls?: string[]; // 다중 이미지용
   keywords?: string[];
   cushionLevel?: CushionLevel;
   createdAt?: string;

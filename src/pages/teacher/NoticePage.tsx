@@ -34,15 +34,20 @@ export default function NoticePage() {
     notices, schedules, deleteNotice 
   } = useAppData();
   const navigate = useNavigate();
-  const [viewerImageUrl, setViewerImageUrl] = useState<string | null>(null);
+  const [viewerImages, setViewerImages] = useState<string[]>([]);
+  const [viewerIndex, setViewerIndex] = useState(0);
   
   const [activeTab, setActiveTab] = useState<'common' | 'individual'>('common');
 
   const [commonTitle, setCommonTitle] = useState('');
   const [commonContent, setCommonContent] = useState('');
-  const [commonPhoto, setCommonPhoto] = useState<string | null>(null);
-  const [commonPhotoFile, setCommonPhotoFile] = useState<File | null>(null);
+  const [commonPhotos, setCommonPhotos] = useState<string[]>([]);
+  const [commonPhotoFiles, setCommonPhotoFiles] = useState<File[]>([]);
   const [isCommonGenerating, setIsCommonGenerating] = useState(false);
+
+  // --- Individual Notice Multi-Photo State ---
+  const [individualPhotoFiles, setIndividualPhotoFiles] = useState<File[]>([]);
+  const [individualPhotos, setIndividualPhotos] = useState<string[]>([]);
 
   // --- Individual Notice State ---
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
@@ -91,29 +96,54 @@ export default function NoticePage() {
   }, [schedules]);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setCommonPhotoFile(file);
-      setCommonPhoto(URL.createObjectURL(file));
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setCommonPhotoFiles(prev => [...prev, ...files].slice(0, 10)); 
+      const newPhotos = files.map(file => URL.createObjectURL(file));
+      setCommonPhotos(prev => [...prev, ...newPhotos].slice(0, 10));
     }
+  };
+
+  const removePhoto = (index: number) => {
+    setCommonPhotoFiles(prev => prev.filter((_, i) => i !== index));
+    setCommonPhotos(prev => prev.filter((_, j) => j !== index));
+  };
+
+  const handleIndividualPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setIndividualPhotoFiles(prev => [...prev, ...files].slice(0, 10)); 
+      const newPhotos = files.map(file => URL.createObjectURL(file));
+      setIndividualPhotos(prev => [...prev, ...newPhotos].slice(0, 10));
+    }
+  };
+
+  const removeIndividualPhoto = (index: number) => {
+    setIndividualPhotoFiles(prev => prev.filter((_, i) => i !== index));
+    setIndividualPhotos(prev => prev.filter((_, j) => j !== index));
   };
 
   const handleSendCommon = async () => {
     if (!commonTitle.trim() || !commonContent.trim()) return;
     
-    let photoUrl = undefined;
-      if (commonPhotoFile) {
-        try {
-          const uploadRes = await uploadAPI.file(commonPhotoFile);
-          if (uploadRes.success) {
-            photoUrl = uploadRes.url;
+    setIsCommonGenerating(true);
+    const photoUrls: string[] = [];
+
+    if (commonPhotoFiles.length > 0) {
+      try {
+        for (const file of commonPhotoFiles) {
+          const uploadRes = await uploadAPI.file(file);
+          if (uploadRes.success && uploadRes.url) {
+            photoUrls.push(uploadRes.url);
           }
-        } catch (err) {
-          console.error("Image upload failed", err);
-          alert('이미지 업로드에 실패했습니다. 이미지를 제외하고 전송하거나 다시 시도해주세요.');
-          return;
         }
+      } catch (err) {
+        console.error("Image upload failed", err);
+        alert('이미지 업로드에 실패했습니다. 다시 시도해주세요.');
+        setIsCommonGenerating(false);
+        return;
       }
+    }
 
     const newNotice: Partial<Notice> = {
       type: 'common',
@@ -122,17 +152,20 @@ export default function NoticePage() {
       date: formatDateISO(),
       isRead: false,
       isSent: true,
-      photoUrl
+      photoUrls,
+      photoUrl: photoUrls[0] || '' // 하위 호환
     };
     try {
       await addNotice(newNotice as Notice);
       setCommonTitle('');
       setCommonContent('');
-      setCommonPhoto(null);
-      setCommonPhotoFile(null);
+      setCommonPhotos([]);
+      setCommonPhotoFiles([]);
       alert('전체 공통 알림장이 전송되었습니다.');
     } catch {
       alert('알림장 전송에 실패했습니다.');
+    } finally {
+      setIsCommonGenerating(false);
     }
   };
 
@@ -173,9 +206,35 @@ export default function NoticePage() {
     const draft = drafts[childId];
     if (!draft) return;
     
+    setIsGenerating(true);
+    const photoUrls: string[] = [];
+
+    if (individualPhotoFiles.length > 0) {
+      try {
+        for (const file of individualPhotoFiles) {
+          const res = await uploadAPI.file(file);
+          if (res.success && res.url) {
+            photoUrls.push(res.url);
+          }
+        }
+      } catch (err) {
+        console.error("Individual image upload failed", err);
+        alert('이미지 업로드에 실패했습니다.');
+        setIsGenerating(false);
+        return;
+      }
+    }
+
     try {
-      await addNotice({ ...draft, isSent: true } as Notice);
+      await addNotice({ 
+        ...draft, 
+        isSent: true,
+        photoUrls,
+        photoUrl: photoUrls[0] || '' 
+      } as Notice);
       alert('개별 알림장이 해당 학부모님께 전송되었습니다.');
+      setIndividualPhotos([]);
+      setIndividualPhotoFiles([]);
       setSelectedChildId(null);
       setDrafts(prev => {
         const newDrafts = { ...prev };
@@ -189,12 +248,34 @@ export default function NoticePage() {
       });
     } catch {
       alert('알림장 전송에 실패했습니다.');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
   const handleSendManualIndividual = async (childId: string) => {
     const memo = memos[childId];
     if (!memo?.trim()) return;
+
+    setIsGenerating(true);
+    const photoUrls: string[] = [];
+
+
+    if (individualPhotoFiles.length > 0) {
+      try {
+        for (const file of individualPhotoFiles) {
+          const res = await uploadAPI.file(file);
+          if (res.success && res.url) {
+            photoUrls.push(res.url);
+          }
+        }
+      } catch (err) {
+        console.error("Manual individual image upload failed", err);
+        alert('이미지 업로드에 실패했습니다.');
+        setIsGenerating(false);
+        return;
+      }
+    }
 
     const child = allChildren.find(c => c.id === childId);
     const newNotice: Partial<Notice> = {
@@ -206,11 +287,15 @@ export default function NoticePage() {
       date: formatDateISO(),
       isRead: false,
       isSent: true,
+      photoUrls,
+      photoUrl: photoUrls[0] || ''
     };
 
     try {
       await addNotice(newNotice as Notice);
       alert('개별 알림장이 전송되었습니다.');
+      setIndividualPhotos([]);
+      setIndividualPhotoFiles([]);
       setSelectedChildId(null);
       setMemos(prev => {
         const newMemos = { ...prev };
@@ -219,6 +304,8 @@ export default function NoticePage() {
       });
     } catch {
       alert('알림장 전송에 실패했습니다.');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -288,23 +375,36 @@ export default function NoticePage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">사진 첨부</label>
-                <label className="flex items-center justify-center gap-2 w-full h-24 border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-all font-semibold relative overflow-hidden">
-                  <input type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} />
-                  {commonPhoto ? (
-                    <>
-                      <img src={commonPhoto} alt="Preview" className="absolute inset-0 w-full h-full object-cover opacity-60" />
-                      <div className="relative z-10 bg-black/50 text-white px-3 py-1 rounded-full text-xs flex items-center gap-1 backdrop-blur-sm">
-                        <CheckCircle size={14} /> 첨부 완료 (클릭하여 변경)
+              <div className="space-y-3">
+                <label className="block text-xs font-bold text-slate-500 mb-1">사진 첨부 (최대 10장)</label>
+                
+                {/* Photo Previews */}
+                {commonPhotos.length > 0 && (
+                  <div className="flex gap-3 overflow-x-auto pt-2 pb-2 scrollbar-hide">
+                    {commonPhotos.map((photo, index) => (
+                      <div key={index} className="relative flex-shrink-0 w-24 h-24 group">
+                        <img 
+                          src={photo} 
+                          alt={`Preview ${index}`} 
+                          className="w-full h-full object-cover rounded-xl border border-slate-200"
+                        />
+                        <button
+                          onClick={(e) => { e.preventDefault(); removePhoto(index); }}
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
+                        >
+                          <X size={14} />
+                        </button>
                       </div>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center gap-1 text-slate-400">
-                      <ImageIcon size={24} />
-                      <span className="text-xs">클릭하여 사진 선택</span>
-                    </div>
-                  )}
+                    ))}
+                  </div>
+                )}
+
+                <label className="flex items-center justify-center gap-2 w-full h-24 border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-all font-semibold relative overflow-hidden">
+                  <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotoUpload} />
+                  <div className="flex flex-col items-center gap-1 text-slate-400">
+                    <ImageIcon size={24} />
+                    <span className="text-xs">사진 추가 (다중 선택 가능)</span>
+                  </div>
                 </label>
               </div>
 
@@ -350,19 +450,28 @@ export default function NoticePage() {
                       <p className="font-bold text-sm text-slate-800">{n.title}</p>
                     </div>
                     <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-line">{n.content}</p>
-                    {n.photoUrl && n.photoUrl !== 'string' && (
-                      <div 
-                        className="mt-3 rounded-xl overflow-hidden h-32 border border-slate-100 cursor-zoom-in"
-                        onClick={() => setViewerImageUrl(getFullImageUrl(n.photoUrl))}
-                      >
-                        <img 
-                          src={getFullImageUrl(n.photoUrl)} 
-                          alt="Attached" 
-                          className="w-full h-full object-cover" 
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).parentElement?.style.setProperty('display', 'none');
-                          }}
-                        />
+                    {/* Multiple Photos Display */}
+                    {((n.photoUrls && n.photoUrls.length > 0) || (n.photoUrl && n.photoUrl !== 'string')) && (
+                      <div className="flex gap-2 overflow-x-auto mt-3 pb-2 scrollbar-hide">
+                        {(n.photoUrls && n.photoUrls.length > 0 ? n.photoUrls : [n.photoUrl!]).map((photo, index, arr) => (
+                          <div 
+                            key={index}
+                            className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden border border-slate-100 cursor-zoom-in group/img"
+                            onClick={() => {
+                              setViewerImages(arr.map(p => getFullImageUrl(p)));
+                              setViewerIndex(index);
+                            }}
+                          >
+                            <img 
+                              src={getFullImageUrl(photo)} 
+                              alt={`Attached ${index}`} 
+                              className="w-full h-full object-cover transition-transform group-hover/img:scale-110" 
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).parentElement?.style.setProperty('display', 'none');
+                              }}
+                            />
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -494,6 +603,31 @@ export default function NoticePage() {
                         바로 전송
                       </button>
                     </div>
+
+                    {/* Manual Photos Upload */}
+                    <div className="mt-4 pt-4 border-t border-slate-50">
+                      <label className="block text-[11px] font-bold text-slate-400 mb-2 ml-1">사진 첨부</label>
+                      {individualPhotos.length > 0 && (
+                        <div className="flex gap-2 overflow-x-auto pt-2 pb-2 scrollbar-hide mb-2">
+                          {individualPhotos.map((photo, index) => (
+                            <div key={index} className="relative flex-shrink-0 w-16 h-16 group">
+                              <img src={photo} alt="" className="w-full h-full object-cover rounded-lg border border-slate-100" />
+                              <button
+                                onClick={(e) => { e.preventDefault(); removeIndividualPhoto(index); }}
+                                className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center shadow hover:bg-red-600 transition-colors"
+                              >
+                                <X size={10} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <label className="flex items-center justify-center gap-2 w-full h-12 border border-dashed border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-all text-slate-400">
+                        <input type="file" className="hidden" accept="image/*" multiple onChange={handleIndividualPhotoUpload} />
+                        <ImageIcon size={14} />
+                        <span className="text-[10px] font-bold">사진 선택</span>
+                      </label>
+                    </div>
                 </div>
               ) : (
                 /* Generated Draft Panel */
@@ -515,6 +649,37 @@ export default function NoticePage() {
                     value={drafts[selectedChildId].content}
                     onChange={(e) => handleDraftChange(selectedChildId, e.target.value)}
                   />
+
+                  {/* Individual Photos Upload in Draft Panel */}
+                  <div className="space-y-3 mb-4">
+                    <label className="block text-[11px] font-bold text-slate-500 ml-1">사진 추가</label>
+                    {individualPhotos.length > 0 && (
+                      <div className="flex gap-2 overflow-x-auto pt-2 pb-2 scrollbar-hide">
+                        {individualPhotos.map((photo, index) => (
+                          <div key={index} className="relative flex-shrink-0 w-20 h-20 group">
+                            <img 
+                              src={photo} 
+                              alt={`Preview ${index}`} 
+                              className="w-full h-full object-cover rounded-xl border border-slate-100"
+                            />
+                            <button
+                              onClick={(e) => { e.preventDefault(); removeIndividualPhoto(index); }}
+                              className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-600 transition-colors"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <label className="flex items-center justify-center gap-2 w-full h-20 border-2 border-dashed border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50 transition-all relative overflow-hidden">
+                      <input type="file" className="hidden" accept="image/*" multiple onChange={handleIndividualPhotoUpload} />
+                      <div className="flex flex-col items-center gap-0.5 text-slate-400">
+                        <ImageIcon size={18} />
+                        <span className="text-[10px] font-bold">사진 추가</span>
+                      </div>
+                    </label>
+                  </div>
 
                   <button
                     className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
@@ -582,10 +747,11 @@ export default function NoticePage() {
           )}
         </div>
       )}
-      {viewerImageUrl && (
+      {viewerImages.length > 0 && (
         <ImageViewer 
-          imageUrl={viewerImageUrl} 
-          onClose={() => setViewerImageUrl(null)} 
+          images={viewerImages} 
+          initialIndex={viewerIndex}
+          onClose={() => setViewerImages([])} 
         />
       )}
     </div>
