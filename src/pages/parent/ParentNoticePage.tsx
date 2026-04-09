@@ -14,7 +14,8 @@ export default function ParentNoticePage() {
   const { notices, children, markNoticeAsRead } = useAppData();
   const [tab, setTab] = useState<'common' | 'individual'>('common');
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [viewerImageUrl, setViewerImageUrl] = useState<string | null>(null);
+  const [viewerImages, setViewerImages] = useState<string[]>([]);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   const commonNotices = notices.filter((n) => n.type === 'common');
   const childIds = children.map(c => c.id);
@@ -76,16 +77,24 @@ export default function ParentNoticePage() {
               </div>
               {expandedId === notice.id && (
                 <div className="px-4 pb-4 animate-fade-in space-y-3">
-                  {notice.photoUrl && (
-                    <div 
-                      className="rounded-xl overflow-hidden border border-slate-100 shadow-sm cursor-zoom-in"
-                      onClick={() => setViewerImageUrl(getFullImageUrl(notice.photoUrl))}
-                    >
-                      <img 
-                        src={getFullImageUrl(notice.photoUrl)} 
-                        alt="Notice" 
-                        className="w-full h-auto object-cover max-h-60"
-                      />
+                  {((notice.photoUrls && notice.photoUrls.length > 0) || (notice.photoUrl && notice.photoUrl !== 'string')) && (
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                      {(notice.photoUrls && notice.photoUrls.length > 0 ? notice.photoUrls : [notice.photoUrl!]).map((photo, idx, arr) => (
+                        <div 
+                          key={idx}
+                          className="flex-shrink-0 w-32 h-32 rounded-xl overflow-hidden border border-slate-100 shadow-sm cursor-zoom-in group"
+                          onClick={() => {
+                            setViewerImages(arr.map(p => getFullImageUrl(p)));
+                            setViewerIndex(idx);
+                          }}
+                        >
+                          <img 
+                            src={getFullImageUrl(photo)} 
+                            alt={`Notice ${idx}`} 
+                            className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                          />
+                        </div>
+                      ))}
                     </div>
                   )}
                   <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line bg-slate-50 p-4 rounded-xl">{notice.content}</p>
@@ -96,10 +105,11 @@ export default function ParentNoticePage() {
         )}
       </div>
 
-      {viewerImageUrl && (
+      {viewerImages.length > 0 && (
         <ImageViewer 
-          imageUrl={viewerImageUrl} 
-          onClose={() => setViewerImageUrl(null)} 
+          images={viewerImages} 
+          initialIndex={viewerIndex}
+          onClose={() => setViewerImages([])} 
         />
       )}
     </div>

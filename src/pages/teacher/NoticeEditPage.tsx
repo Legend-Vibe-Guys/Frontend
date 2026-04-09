@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAppData } from '../../hooks';
 import { ChevronLeft, Save, Trash2, Camera, Megaphone } from 'lucide-react';
 import { PATH } from '../../router/Path';
+import { API_BASE } from '../../api/api';
 
 export default function NoticeEditPage() {
   const { id } = useParams<{ id: string }>();
@@ -11,6 +12,9 @@ export default function NoticeEditPage() {
   
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('');
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [newPhotoFiles, setNewPhotoFiles] = useState<File[]>([]);
+  const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -20,6 +24,8 @@ export default function NoticeEditPage() {
     if (notice) {
       setTitle(notice.title);
       setContent(notice.content);
+      // Initialize photoUrls from array or fallback to single string
+      setPhotoUrls(notice.photoUrls || (notice.photoUrl ? [notice.photoUrl] : []));
     }
   }, [notice]);
 
@@ -37,11 +43,45 @@ export default function NoticeEditPage() {
     );
   }
 
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setNewPhotoFiles(prev => [...prev, ...files]);
+      const previews = files.map(file => URL.createObjectURL(file));
+      setNewPhotoPreviews(prev => [...prev, ...previews]);
+    }
+  };
+
+  const removeExistingPhoto = (index: number) => {
+    setPhotoUrls(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeNewPhoto = (index: number) => {
+    setNewPhotoFiles(prev => prev.filter((_, i) => i !== index));
+    setNewPhotoPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSave = async () => {
     if (!content.trim()) return;
     setIsSaving(true);
     try {
-      await updateNotice(notice.id, { title, content });
+      const { uploadAPI } = await import('../../api/api');
+      const finalPhotoUrls = [...photoUrls];
+
+      // Sequential upload for new photos
+      for (const file of newPhotoFiles) {
+        const res = await uploadAPI.file(file);
+        if (res.success && res.url) {
+          finalPhotoUrls.push(res.url);
+        }
+      }
+
+      await updateNotice(notice.id, { 
+        title, 
+        content, 
+        photoUrls: finalPhotoUrls,
+        photoUrl: finalPhotoUrls[0] || '' // Backward compatibility
+      });
       navigate(PATH.TEACHER.NOTICE);
     } catch (error) {
       console.error('Failed to update notice', error);
@@ -63,6 +103,12 @@ export default function NoticeEditPage() {
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const getFullImageUrl = (url?: string) => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    return `${API_BASE}${url}`;
   };
 
   return (
@@ -130,19 +176,51 @@ export default function NoticeEditPage() {
              />
            </div>
 
-           {notice.photoUrl && (
-             <div className="mt-6">
-               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block ml-1">첨부된 사진</label>
-               <div className="relative rounded-2xl overflow-hidden aspect-video border border-slate-100">
-                 <img src={notice.photoUrl} alt="Attached" className="w-full h-full object-cover" />
-                 <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                   <button className="bg-white/90 p-2 rounded-xl text-slate-800 font-bold text-xs flex items-center gap-1.5 shadow-lg">
-                     <Camera size={14} /> 사진 변경 (추후지원)
-                   </button>
-                 </div>
-               </div>
-             </div>
-           )}
+            <div className="mt-8 border-t border-slate-50 pt-6">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3 block ml-1">사진 관리 ({photoUrls.length + newPhotoFiles.length}장)</label>
+              
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {/* Existing Photos */}
+                {photoUrls.map((url, idx) => (
+                  <div key={`existing-${idx}`} className="relative rounded-2xl overflow-hidden aspect-video border border-slate-100 group">
+                    <img src={getFullImageUrl(url)} alt="Existing" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => removeExistingPhoto(idx)}
+                        className="bg-red-500 text-white p-2 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-lg active:scale-95 transition-all"
+                      >
+                        <Trash2 size={14} /> 삭제
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* New Photo Previews */}
+                {newPhotoPreviews.map((preview, idx) => (
+                  <div key={`new-${idx}`} className="relative rounded-2xl overflow-hidden aspect-video border border-blue-100 bg-blue-50/30 group">
+                    <img src={preview} alt="New" className="w-full h-full object-cover" />
+                    <div className="absolute top-2 left-2 bg-blue-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-widest shadow-sm">New</div>
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => removeNewPhoto(idx)}
+                        className="bg-red-500 text-white p-2 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-lg active:scale-95 transition-all"
+                      >
+                        <Trash2 size={14} /> 취소
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Add Photo Button */}
+                <label className="flex flex-col items-center justify-center gap-2 aspect-video border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-50 transition-all font-semibold text-slate-400 group">
+                  <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotoUpload} />
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                    <Camera size={20} />
+                  </div>
+                  <span className="text-[10px] uppercase tracking-wider">사진 추가</span>
+                </label>
+              </div>
+            </div>
         </div>
 
         {/* Save Button */}
