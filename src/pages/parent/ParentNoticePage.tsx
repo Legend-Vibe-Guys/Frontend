@@ -1,16 +1,37 @@
 import { useState } from 'react';
 import { useAppData } from '../../hooks';
-import { Bell, ChevronDown, ChevronUp, Megaphone, ClipboardList } from 'lucide-react';
+import { Bell, ChevronDown, ChevronUp, Megaphone, ClipboardList, Camera } from 'lucide-react';
+import { API_BASE } from '../../api/api';
+import ImageViewer from '../../components/common/ImageViewer';
+
+const getFullImageUrl = (url?: string) => {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  return `${API_BASE}${url}`;
+};
 
 export default function ParentNoticePage() {
   const { notices, children, markNoticeAsRead } = useAppData();
   const [tab, setTab] = useState<'common' | 'individual'>('common');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [viewerImageUrl, setViewerImageUrl] = useState<string | null>(null);
 
   const commonNotices = notices.filter((n) => n.type === 'common');
   const childIds = children.map(c => c.id);
   const individualNotices = notices.filter((n) => n.type === 'individual' && childIds.includes(n.childId || ''));
-  const currentList = tab === 'common' ? commonNotices : individualNotices;
+  
+  const currentList = [...(tab === 'common' ? commonNotices : individualNotices)].sort((a, b) => {
+    // 1. 생성일시 역순 (최신순) - 정확한 시간 기준
+    if (a.createdAt && b.createdAt) {
+      return b.createdAt.localeCompare(a.createdAt);
+    }
+    // 2. 생성일시가 없으면 날짜 역순
+    if (a.date !== b.date) {
+      return b.date.localeCompare(a.date);
+    }
+    // 3. 마지막 수단으로 ID 역순
+    return b.id.localeCompare(a.id);
+  });
 
   return (
     <div className="p-6 pb-28 animate-fade-in">
@@ -43,17 +64,30 @@ export default function ParentNoticePage() {
                   setExpandedId(null);
                 }
               }}>
-                <div>
+                <div className="flex-1">
                   <p className="text-[10px] text-slate-400 mb-[2px]">{notice.date}</p>
-                  <p className="font-bold text-sm text-slate-800">{notice.title}</p>
+                  <p className="font-bold text-sm text-slate-800 line-clamp-1">{notice.title}</p>
                 </div>
-                <div className="flex items-center gap-2 text-slate-400">
+                <div className="flex items-center gap-3 text-slate-400 ml-2">
+                  {notice.photoUrl && <Camera size={14} className="text-blue-400" />}
                   {!notice.isRead && <span className="w-2 h-2 bg-blue-600 rounded-full" />}
                   {expandedId === notice.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 </div>
               </div>
               {expandedId === notice.id && (
-                <div className="px-4 pb-4 animate-fade-in">
+                <div className="px-4 pb-4 animate-fade-in space-y-3">
+                  {notice.photoUrl && (
+                    <div 
+                      className="rounded-xl overflow-hidden border border-slate-100 shadow-sm cursor-zoom-in"
+                      onClick={() => setViewerImageUrl(getFullImageUrl(notice.photoUrl))}
+                    >
+                      <img 
+                        src={getFullImageUrl(notice.photoUrl)} 
+                        alt="Notice" 
+                        className="w-full h-auto object-cover max-h-60"
+                      />
+                    </div>
+                  )}
                   <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line bg-slate-50 p-4 rounded-xl">{notice.content}</p>
                 </div>
               )}
@@ -61,6 +95,13 @@ export default function ParentNoticePage() {
           ))
         )}
       </div>
+
+      {viewerImageUrl && (
+        <ImageViewer 
+          imageUrl={viewerImageUrl} 
+          onClose={() => setViewerImageUrl(null)} 
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../../hooks';
+import { formatDateISO } from '../../utils/date';
 import { uploadAPI, API_BASE } from '../../api/api';
 import type { Notice } from '../../types';
 import {
@@ -19,6 +20,7 @@ import {
 import { StatusDashboard } from '../../components/teacher/StatusDashboard';
 import { ChildListGrid } from '../../components/teacher/ChildListGrid';
 import { PATH } from '../../router/Path';
+import ImageViewer from '../../components/common/ImageViewer';
 
 const getFullImageUrl = (url?: string) => {
   if (!url) return '';
@@ -32,6 +34,7 @@ export default function NoticePage() {
     notices, schedules, deleteNotice 
   } = useAppData();
   const navigate = useNavigate();
+  const [viewerImageUrl, setViewerImageUrl] = useState<string | null>(null);
   
   const [activeTab, setActiveTab] = useState<'common' | 'individual'>('common');
 
@@ -50,10 +53,21 @@ export default function NoticePage() {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const allChildren = children; // 모든 원아 표시 요구사항 반영
-  const commonNotices = notices.filter((n) => n.type === 'common');
-  const individualNotices = notices.filter((n) => n.type === 'individual');
+  const commonNotices = notices
+    .filter((n) => n.type === 'common')
+    .sort((a, b) => {
+      if (a.createdAt && b.createdAt) return b.createdAt.localeCompare(a.createdAt);
+      return b.date.localeCompare(a.date) || b.id.localeCompare(a.id);
+    });
+    
+  const individualNotices = notices
+    .filter((n) => n.type === 'individual')
+    .sort((a, b) => {
+      if (a.createdAt && b.createdAt) return b.createdAt.localeCompare(a.createdAt);
+      return b.date.localeCompare(a.date) || b.id.localeCompare(a.id);
+    });
 
-  const todayString = new Date().toISOString().split('T')[0];
+  const todayString = formatDateISO();
   const completedIndividualChildIds = new Set(individualNotices.filter(n => n.date === todayString).map(n => n.childId));
   const completedCount = allChildren.filter(c => completedIndividualChildIds.has(c.id)).length;
 
@@ -105,7 +119,7 @@ export default function NoticePage() {
       type: 'common',
       title: commonTitle,
       content: commonContent,
-      date: new Date().toISOString().split('T')[0],
+      date: formatDateISO(),
       isRead: false,
       isSent: true,
       photoUrl
@@ -189,7 +203,7 @@ export default function NoticePage() {
       childName: child?.name,
       title: `${new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })} ${child?.name} 알림장`,
       content: memo,
-      date: new Date().toISOString().split('T')[0],
+      date: formatDateISO(),
       isRead: false,
       isSent: true,
     };
@@ -337,9 +351,12 @@ export default function NoticePage() {
                     </div>
                     <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-line">{n.content}</p>
                     {n.photoUrl && n.photoUrl !== 'string' && (
-                      <div className="mt-3 rounded-xl overflow-hidden h-32 border border-slate-100">
+                      <div 
+                        className="mt-3 rounded-xl overflow-hidden h-32 border border-slate-100 cursor-zoom-in"
+                        onClick={() => setViewerImageUrl(getFullImageUrl(n.photoUrl))}
+                      >
                         <img 
-                          src={n.photoUrl} 
+                          src={getFullImageUrl(n.photoUrl)} 
                           alt="Attached" 
                           className="w-full h-full object-cover" 
                           onError={(e) => {
@@ -564,6 +581,12 @@ export default function NoticePage() {
             </div>
           )}
         </div>
+      )}
+      {viewerImageUrl && (
+        <ImageViewer 
+          imageUrl={viewerImageUrl} 
+          onClose={() => setViewerImageUrl(null)} 
+        />
       )}
     </div>
   );
