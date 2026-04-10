@@ -91,7 +91,7 @@ export function ObservationArchive({ observations, children }: ObservationArchiv
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="font-black text-slate-900 truncate">{obs.childName}</span>
                       <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-                        {obs.categories[0]?.name}
+                        {obs.categories?.[0]?.name || '영역 미지정'}
                       </span>
                     </div>
                     <p className="text-[10px] text-slate-400 font-bold">{obs.date}</p>
@@ -101,15 +101,15 @@ export function ObservationArchive({ observations, children }: ObservationArchiv
               </div>
               {expandedObs === obs.id && (
                 <div className="px-6 pb-7 animate-fade-in border-t border-slate-50 pt-6 space-y-6">
-                   <div className="px-1">
-                     <span className="text-[10px] font-black text-slate-300 uppercase block mb-2 tracking-tighter">🔎 관찰 내용</span>
-                     <p className="text-[13px] font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">
+                   <div className="px-2">
+                     <span className="text-[10px] font-black text-indigo-400 uppercase block mb-2 tracking-tighter">🔎 관찰 내용</span>
+                     <p className="text-[13px] font-bold text-indigo-900/90 leading-relaxed whitespace-pre-wrap">
                        {obs.content}
                      </p>
                    </div>
                    <div className="bg-slate-50/80 p-5 rounded-[1.5rem] border border-slate-100">
                      <span className="text-[10px] font-black text-indigo-400 uppercase block mb-2 tracking-tighter">💡 관찰 평가</span>
-                     <p className="text-[13px] font-medium text-slate-500 leading-relaxed whitespace-pre-wrap">
+                     <p className="text-[13px] font-bold text-indigo-900 leading-relaxed whitespace-pre-wrap">
                        {obs.evaluation || "분석된 평가 내용이 없습니다."}
                      </p>
                    </div>
