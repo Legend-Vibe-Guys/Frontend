@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAppData, useAuth } from '../../hooks';
 import { memosAPI, studentsAPI, API_BASE } from '../../api/api';
 import { ChevronLeft, AlertTriangle, Pill, BookOpen, Save, CheckCircle, Plus, X } from 'lucide-react';
+import { formatDateISO } from '../../utils/date';
 
 const getFullImageUrl = (url?: string) => {
   if (!url) return '';
@@ -29,7 +30,7 @@ export default function StudentDetailPage() {
   const child = children.find(c => c.id === id);
 
   // 날짜 및 메모 동기화
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatDateISO();
   const [selectedDate, setSelectedDate] = useState(today);
   const [memosByDate, setMemosByDate] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);

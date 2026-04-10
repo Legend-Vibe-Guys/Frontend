@@ -8,7 +8,10 @@ import {
   type ReactNode,
 } from 'react';
 import { useAuth } from './AuthContext';
+
 import { studentsAPI, noticeAPI, scheduleAPI, observationAPI } from '../api/api';
+import { formatDateISO } from '../utils/date';
+
 import type {
   Child,
   AttendanceRecord,
@@ -71,7 +74,6 @@ interface AppDataContextType {
 }
 
 const AppDataContext = createContext<AppDataContextType | null>(null);
-
 
 export function AppDataProvider({ children: childrenProp }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -167,7 +169,7 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
           setMeals([]);
 
           // 통계 통합 계산
-          const today = new Date().toISOString().split('T')[0];
+          const today = formatDateISO();
           const noticeCompleted = (noticeRes.notices || []).filter(n => n.type === 'individual' && n.date === today && n.isSent).length;
           const observationCompleted = (observationRes?.observations || []).filter((o: ObservationRecord) => o.date === today).length;
           
@@ -198,7 +200,6 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
     }
     return () => { mounted = false; };
   }, [isAuthenticated]);
-
 
   const markAttendance = useCallback(
     (childId: string, status: AttendanceRecord['status']) => {
@@ -276,7 +277,7 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
         childName: child?.name,
         title: `${new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric'})} ${child?.name} 알림장`,
         content: data.report,
-        date: new Date().toISOString().split('T')[0],
+        date: formatDateISO(),
         isRead: false,
         isSent: false,
       };
@@ -303,7 +304,6 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
     },
     []
   );
-
 
   const generateBatchNotices = useCallback(
     async (
@@ -359,7 +359,7 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
         id: `temp-${Date.now()}`,
         childId,
         childName: child?.name ?? '아이',
-        date: new Date().toISOString().split('T')[0],
+        date: formatDateISO(),
         categories: [
           {
             name: category,
@@ -500,7 +500,7 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
       
       setStats(prev => {
         const deletedNotice = notices.find(n => n.id === id);
-        const today = new Date().toISOString().split('T')[0];
+        const today = formatDateISO();
         if (deletedNotice && deletedNotice.date === today && deletedNotice.isSent && deletedNotice.type === 'individual') {
           return { ...prev, noticeCompleted: Math.max(0, prev.noticeCompleted - 1) };
         }

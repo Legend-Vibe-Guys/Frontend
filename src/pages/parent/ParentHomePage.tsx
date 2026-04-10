@@ -1,9 +1,11 @@
 import { useAuth, useAppData } from '../../hooks';
-import { formatDateKorean } from '../../utils/date';
+import { formatDateKorean, formatDateISO } from '../../utils/date';
 import { Heart, BookOpen, MessageCircle, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PATH } from '../../router/Path';
 import { API_BASE } from '../../api/api';
+import { useState } from 'react';
+import ImageViewer from '../../components/common/ImageViewer';
 
 const getFullImageUrl = (url?: string) => {
   if (!url) return '';
@@ -15,6 +17,8 @@ export default function ParentHomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { children, observations, notices, schedules } = useAppData();
+  const [viewerImages, setViewerImages] = useState<string[]>([]);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   const myChild = children[0];
 
@@ -26,10 +30,18 @@ export default function ParentHomePage() {
     );
   }
 
-  const childObservations = observations.filter((o) => o.childId === myChild.id);
-  const childNotices = notices.filter((n) => n.type === 'individual' && n.childId === myChild.id);
+  const childObservations = observations
+    .filter((o) => o.childId === myChild.id)
+    .sort((a, b) => b.date.localeCompare(a.date));
+    
+  const childNotices = notices
+    .filter((n) => n.type === 'individual' && n.childId === myChild.id)
+    .sort((a, b) => {
+      if (a.createdAt && b.createdAt) return b.createdAt.localeCompare(a.createdAt);
+      return b.date.localeCompare(a.date);
+    });
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatDateISO();
   const todaySchedules = schedules
     .filter((s) => s.date === today)
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
@@ -125,16 +137,27 @@ export default function ParentHomePage() {
           <div className="p-4 bg-white border border-slate-200 rounded-2xl">
             <p className="text-[10px] text-slate-400 mb-2">{childNotices[0].date}</p>
             <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">{childNotices[0].content}</p>
-            {childNotices[0].photoUrl && childNotices[0].photoUrl !== 'string' && (
-              <div className="mt-3 rounded-xl overflow-hidden h-32 border border-slate-100">
-                <img 
-                  src={childNotices[0].photoUrl} 
-                  alt="Attached" 
-                  className="w-full h-full object-cover" 
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).parentElement?.style.setProperty('display', 'none');
-                  }}
-                />
+            {((childNotices[0].photoUrls && childNotices[0].photoUrls.length > 0) || (childNotices[0].photoUrl && childNotices[0].photoUrl !== 'string')) && (
+              <div className="flex gap-2 overflow-x-auto mt-3 pb-2 scrollbar-hide">
+                {(childNotices[0].photoUrls && childNotices[0].photoUrls.length > 0 ? childNotices[0].photoUrls : [childNotices[0].photoUrl!]).map((photo, idx, arr) => (
+                  <div 
+                    key={idx}
+                    className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden border border-slate-100 cursor-zoom-in group"
+                    onClick={() => {
+                      setViewerImages(arr.map(p => getFullImageUrl(p)));
+                      setViewerIndex(idx);
+                    }}
+                  >
+                    <img 
+                      src={getFullImageUrl(photo)} 
+                      alt={`Attached ${idx}`} 
+                      className="w-full h-full object-cover transition-transform group-hover:scale-110" 
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).parentElement?.style.setProperty('display', 'none');
+                      }}
+                    />
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -152,6 +175,14 @@ export default function ParentHomePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {viewerImages.length > 0 && (
+        <ImageViewer 
+          images={viewerImages} 
+          initialIndex={viewerIndex}
+          onClose={() => setViewerImages([])} 
+        />
       )}
     </div>
   );
