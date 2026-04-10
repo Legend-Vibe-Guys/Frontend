@@ -1,9 +1,7 @@
-import { Sparkles, Loader2, Save } from 'lucide-react';
-import type { Child, ObservationLog } from '../../../types';
-import { ChildAvatar } from '../../../components/common/ChildAvatar';
 import { Sparkles, Loader2, Save, Mic } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
 import type { Child, ObservationLog, NuriDomain } from '../../../types';
+import { ChildAvatar } from '../../../components/common/ChildAvatar';
+import { useState, useEffect, useRef } from 'react';
 
 interface QuickMemoFormProps {
   selectedChild: Child;
