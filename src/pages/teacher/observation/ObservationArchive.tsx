@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp, Trash2, Edit2, Save, X, Loader2 } from 'lucide-react';
 import { CustomSelect } from '../../../components/teacher/CustomSelect';
 import type { ObservationLog, Child, NuriDomain } from '../../../types';
+import { ChildAvatar } from '../../../components/common/ChildAvatar';
 
 interface ObservationArchiveProps {
   observations: ObservationLog[];
@@ -222,8 +223,9 @@ export function ObservationArchive({ observations, children, onDelete, onUpdate 
                    )}
                 </div>
               )}
-            </div>
-          ))
+              </div>
+            );
+          })
         ) : (
           <div className="py-20 text-center text-slate-400 font-bold bg-white rounded-[2rem] border-2 border-dashed border-slate-100">
             기록 데이터가 없습니다.
