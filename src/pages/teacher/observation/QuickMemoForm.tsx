@@ -1,11 +1,13 @@
 import { Sparkles, Loader2, Save } from 'lucide-react';
-import type { Child, ObservationLog } from '../../../types';
+import type { Child, ObservationLog, NuriDomain } from '../../../types';
 
 interface QuickMemoFormProps {
   selectedChild: Child;
   memo: string;
   setMemo: (val: string) => void;
   isGenerating: boolean;
+  selectedCategory: string;
+  setSelectedCategory: (val: string) => void;
   onGenerateAI: () => void;
   aiDraft: ObservationLog | null;
   setAiDraft: (draft: ObservationLog | null) => void;
@@ -17,11 +19,16 @@ export function QuickMemoForm({
   memo,
   setMemo,
   isGenerating,
+  selectedCategory,
+  setSelectedCategory,
   onGenerateAI,
   aiDraft,
   setAiDraft,
   onSave
 }: QuickMemoFormProps) {
+
+
+  const nuriDomains: NuriDomain[] = ['신체운동·건강', '의사소통', '사회관계', '예술경험', '자연탐구'];
 
   return (
     <div className="bg-white border border-slate-200 rounded-[2rem] p-6 md:p-8 shadow-sm">
@@ -39,9 +46,28 @@ export function QuickMemoForm({
 
       <div className="space-y-6 mb-8">
         <div className="flex flex-col">
+          <label className="text-[11px] font-black text-slate-400 mb-3 ml-2 uppercase tracking-wider">누리과정 영역 선택</label>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {nuriDomains.map(domain => (
+              <button
+                key={domain}
+                onClick={() => setSelectedCategory(domain)}
+                className={`py-3 px-4 rounded-xl text-xs font-black transition-all border flex items-center justify-center ${
+                  selectedCategory === domain 
+                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-100' 
+                    : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200'
+                }`}
+              >
+                {domain}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col">
           <label className="text-[11px] font-black text-slate-400 mb-3 ml-2 uppercase tracking-wider">관찰 텍스트 메모</label>
           <textarea 
-            className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-base font-medium outline-none focus:border-indigo-400 focus:bg-white transition-all resize-none shadow-inner min-h-[160px]"
+            className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-base font-medium outline-none focus:border-indigo-400 focus:bg-white transition-all resize-none shadow-inner min-h-[200px] placeholder:text-sm placeholder:font-bold placeholder:text-slate-400"
             placeholder="예: 자유시간에 블록으로 높은 성을 쌓았습니다. 친구에게 장난감을 양보했습니다."
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
@@ -53,7 +79,7 @@ export function QuickMemoForm({
         <button
           className="w-full py-5 text-lg bg-slate-900 hover:bg-slate-800 text-white font-black rounded-2xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-50"
           onClick={onGenerateAI}
-          disabled={isGenerating || !memo.trim()}
+          disabled={isGenerating || !memo.trim() || !selectedCategory}
         >
           {isGenerating ? (
             <><Loader2 size={24} className="animate-spin" /> AI 분석 중...</>

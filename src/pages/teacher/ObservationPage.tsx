@@ -20,6 +20,7 @@ export default function ObservationPage() {
   const [quickMemo, setQuickMemo] = useState('');
   const [isGeneratingAIObs, setIsGeneratingAIObs] = useState(false);
   const [aiDraft, setAiDraft] = useState<ObservationLog | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('신체운동·건강');
 
 
 
@@ -30,10 +31,10 @@ export default function ObservationPage() {
   };
 
   const handleGenerateAI = async () => {
-    if (!selectedChildId) return;
+    if (!selectedChildId || !selectedCategory) return;
     setIsGeneratingAIObs(true);
     try {
-      const draft = await generateAIObservation(selectedChildId, quickMemo);
+      const draft = await generateAIObservation(selectedChildId, quickMemo, selectedCategory);
       setAiDraft(draft);
     } finally {
       setIsGeneratingAIObs(false);
@@ -88,6 +89,8 @@ export default function ObservationPage() {
              selectedChild={children.find(c => c.id === selectedChildId)!}
              memo={quickMemo} setMemo={setQuickMemo}
              isGenerating={isGeneratingAIObs}
+             selectedCategory={selectedCategory}
+             setSelectedCategory={setSelectedCategory}
              onGenerateAI={handleGenerateAI}
              aiDraft={aiDraft} setAiDraft={setAiDraft}
              onSave={handleSaveToArchive}

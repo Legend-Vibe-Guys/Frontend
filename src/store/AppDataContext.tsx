@@ -8,8 +8,10 @@ import {
   type ReactNode,
 } from 'react';
 import { useAuth } from './AuthContext';
-import { studentsAPI, noticeAPI, scheduleAPI } from '../api/api';
+
+import { studentsAPI, noticeAPI, scheduleAPI, observationAPI } from '../api/api';
 import { formatDateISO } from '../utils/date';
+
 import type {
   Child,
   AttendanceRecord,
@@ -22,13 +24,10 @@ import type {
   MonthlyReport,
   NuriDomain,
   DomainDetail,
+  ObservationRecord,
 } from '../types';
 import {
-  MOCK_ATTENDANCE,
-  MOCK_OBSERVATIONS,
   MOCK_DASHBOARD_STATS,
-  MOCK_ACTIVITY_TIMELINE,
-  MOCK_MEAL_PLANS,
 } from '../constants/mockData';
 
 interface AppDataContextType {
@@ -58,8 +57,8 @@ interface AppDataContextType {
     lengthOption: 'short' | 'long',
     summaryContext: string
   ) => Promise<Notice[]>;
-  addObservation: (observation: ObservationLog) => void;
-  generateAIObservation: (childId: string, memo: string, photoFile?: File) => Promise<ObservationLog>;
+  addObservation: (observation: ObservationLog) => Promise<void>;
+  generateAIObservation: (childId: string, memo: string, category: string) => Promise<ObservationLog>;
   generateMonthlyReport: (childId: string, month: string) => Promise<MonthlyReport>;
   saveMonthlyReport: (report: MonthlyReport) => void;
   deleteMonthlyReport: (reportId: string) => void;
@@ -75,7 +74,6 @@ interface AppDataContextType {
 }
 
 const AppDataContext = createContext<AppDataContextType | null>(null);
-
 
 export function AppDataProvider({ children: childrenProp }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -106,10 +104,11 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
       setIsLoading(true);
       const fetchData = async () => {
         try {
-          const [studentRes, noticeRes, scheduleRes] = await Promise.all([
+          const [studentRes, noticeRes, scheduleRes, observationRes] = await Promise.all([
             studentsAPI.getAll(),
             noticeAPI.getAll(),
-            scheduleAPI.getAll()
+            scheduleAPI.getAll(),
+            observationAPI.getAll()
           ]);
 
           if (!mounted) return;
@@ -150,16 +149,29 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
             setSchedules(scheduleRes.schedules);
           }
 
-          // 초기화 (Mock 데이터 기반 항목들 및 통계)
-          setAttendance(MOCK_ATTENDANCE);
-          setObservations(MOCK_OBSERVATIONS);
-          setActivities(MOCK_ACTIVITY_TIMELINE);
-          setMeals(MOCK_MEAL_PLANS);
+          if (observationRes && observationRes.success) {
+            // 서버의 필드명(observationContent 등)을 UI 필드명(content 등)으로 매핑
+            const mappedObservations: ObservationLog[] = observationRes.observations.map((obs: ObservationRecord) => ({
+              id: obs.id || `obs-${Date.now()}-${Math.random()}`,
+              childId: obs.childId,
+              childName: obs.childName,
+              date: obs.date,
+              content: obs.content || obs.observationContent || '',
+              evaluation: obs.evaluation || obs.observationEvaluation || '',
+              categories: obs.categories || [{ name: obs.category || '기타', analysis: '' }],
+              isAIGenerated: obs.isAIGenerated || false,
+            }));
+            setObservations(mappedObservations);
+          }
+
+          setAttendance(MOCK_DASHBOARD_STATS.presentCount ? [] : []); // 출석 데이터 초기화 (임시)
+          setActivities([]);
+          setMeals([]);
 
           // 통계 통합 계산
           const today = formatDateISO();
           const noticeCompleted = (noticeRes.notices || []).filter(n => n.type === 'individual' && n.date === today && n.isSent).length;
-          const observationCompleted = MOCK_OBSERVATIONS.filter(o => o.date === today).length;
+          const observationCompleted = (observationRes?.observations || []).filter((o: ObservationRecord) => o.date === today).length;
           
           setStats({
             totalChildren: mappedChildren.length,
@@ -188,7 +200,6 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
     }
     return () => { mounted = false; };
   }, [isAuthenticated]);
-
 
   const markAttendance = useCallback(
     (childId: string, status: AttendanceRecord['status']) => {
@@ -294,7 +305,6 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
     []
   );
 
-
   const generateBatchNotices = useCallback(
     async (
       childIds: string[],
@@ -310,36 +320,55 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
     [generateAINotice],
   );
 
-  const addObservation = useCallback((observation: ObservationLog) => {
-    setObservations((prev) => [observation, ...prev]);
+  const addObservation = useCallback(async (observation: ObservationLog) => {
+    try {
+      const res = await observationAPI.create({
+        childId: observation.childId,
+        childName: observation.childName,
+        memo: observation.rawMemo || '', // 원문 메모 보존
+        category: observation.categories[0].name,
+        observationContent: observation.content,
+        observationEvaluation: observation.evaluation,
+        date: observation.date
+      });
+      if (res.id) {
+        // 새로 저장된 데이터는 이미 observation 객체에 categories가 포함되어 있음
+        const newObs = { 
+          ...observation, 
+          id: res.id
+        };
+        setObservations((prev) => [newObs, ...prev]);
+      }
+    } catch (error) {
+      console.error("Failed to save observation", error);
+      throw error;
+    }
   }, []);
 
   const generateAIObservation = useCallback(
-    async (childId: string, memo: string, photoFile?: File): Promise<ObservationLog> => {
-      void photoFile;
-      await new Promise((r) => setTimeout(r, 1500));
+    async (childId: string, memo: string, category: string): Promise<ObservationLog> => {
       const child = childrenData.find((c) => c.id === childId);
       
-      let matchedDomain = '사회관계';
-      if (memo.includes('블록') || memo.includes('그림')) matchedDomain = '예술경험';
-      if (memo.includes('뛰어') || memo.includes('공')) matchedDomain = '신체운동·건강';
-      if (memo.includes('벌레') || memo.includes('관찰')) matchedDomain = '자연탐구';
-      if (memo.includes('말') || memo.includes('단어')) matchedDomain = '의사소통';
-      
+      const res = await observationAPI.generateDraft({
+        childName: child?.name || '아이',
+        memo,
+        category
+      });
+
       const observation: ObservationLog = {
-        id: `obs-${Date.now()}`,
+        id: `temp-${Date.now()}`,
         childId,
         childName: child?.name ?? '아이',
         date: formatDateISO(),
         categories: [
           {
-            name: matchedDomain,
-            analysis:
-              `분석 결과, ${matchedDomain} 영역의 발달이 돋보입니다.`,
+            name: category,
+            analysis: `${category} 영역의 관찰 기록입니다.`,
           },
         ],
-        content: `${child?.name ?? '아이'}가 ${memo || '즐겁게 활동하는'} 모습을 관찰하였습니다.`,
-        evaluation: `교사나 친구들과의 상호작용 속에서 자발적인 성장이 이루어지고 있습니다. ${matchedDomain} 영역에서의 발달이 매우 긍정적입니다.`,
+        content: res.observationContent,
+        evaluation: res.observationEvaluation,
+        rawMemo: memo, // 저장 시 필요
         isAIGenerated: true,
       };
       return observation;

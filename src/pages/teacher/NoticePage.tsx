@@ -9,13 +9,12 @@ import {
   Send,
   MessageSquare,
   Image as ImageIcon,
-  CheckCircle,
   RefreshCcw,
   X,
   Edit3,
   Trash2,
   Megaphone,
-  PenLine
+  PenLine,
 } from 'lucide-react';
 import { StatusDashboard } from '../../components/teacher/StatusDashboard';
 import { ChildListGrid } from '../../components/teacher/ChildListGrid';
@@ -29,14 +28,19 @@ const getFullImageUrl = (url?: string) => {
 };
 
 export default function NoticePage() {
-  const { 
-    children, addNotice, generateAINotice, generateAICommonNotice, 
-    notices, schedules, deleteNotice 
+  const {
+    children,
+    addNotice,
+    generateAINotice,
+    generateAICommonNotice,
+    notices,
+    schedules,
+    deleteNotice,
   } = useAppData();
   const navigate = useNavigate();
   const [viewerImages, setViewerImages] = useState<string[]>([]);
   const [viewerIndex, setViewerIndex] = useState(0);
-  
+
   const [activeTab, setActiveTab] = useState<'common' | 'individual'>('common');
 
   const [commonTitle, setCommonTitle] = useState('');
@@ -64,7 +68,7 @@ export default function NoticePage() {
       if (a.createdAt && b.createdAt) return b.createdAt.localeCompare(a.createdAt);
       return b.date.localeCompare(a.date) || b.id.localeCompare(a.id);
     });
-    
+
   const individualNotices = notices
     .filter((n) => n.type === 'individual')
     .sort((a, b) => {
@@ -73,59 +77,71 @@ export default function NoticePage() {
     });
 
   const todayString = formatDateISO();
-  const completedIndividualChildIds = new Set(individualNotices.filter(n => n.date === todayString).map(n => n.childId));
-  const completedCount = allChildren.filter(c => completedIndividualChildIds.has(c.id)).length;
+  const completedIndividualChildIds = new Set(
+    individualNotices.filter((n) => n.date === todayString).map((n) => n.childId),
+  );
+  const completedCount = allChildren.filter((c) => completedIndividualChildIds.has(c.id)).length;
 
-  const todaySchedules = schedules.filter(s => s.date === todayString);
+  const todaySchedules = schedules.filter((s) => s.date === todayString);
 
   useEffect(() => {
     if (!activitySummary && todaySchedules.length > 0) {
-      const importantKeywords = ['활동', '놀이', '식사', '점심', '간식', '야외', '견학', '체욱', '미술'];
-      const filteredSchedules = todaySchedules.filter(s =>
-        importantKeywords.some(keyword => s.title.includes(keyword))
+      const importantKeywords = [
+        '활동',
+        '놀이',
+        '식사',
+        '점심',
+        '간식',
+        '야외',
+        '견학',
+        '체욱',
+        '미술',
+      ];
+      const filteredSchedules = todaySchedules.filter((s) =>
+        importantKeywords.some((keyword) => s.title.includes(keyword)),
       );
 
       if (filteredSchedules.length > 0) {
-        const scheduleText = filteredSchedules.map(s => s.title).join(', ');
+        const scheduleText = filteredSchedules.map((s) => s.title).join(', ');
         setActivitySummary(`오늘 저희 반은 ${scheduleText} 위주로 하루를 보냈습니다.`);
       } else {
         setActivitySummary(`오늘 저희 반은 실내 자유참여 및 정규 일정을 무사히 마쳤습니다.`);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schedules]);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      setCommonPhotoFiles(prev => [...prev, ...files].slice(0, 10)); 
-      const newPhotos = files.map(file => URL.createObjectURL(file));
-      setCommonPhotos(prev => [...prev, ...newPhotos].slice(0, 10));
+      setCommonPhotoFiles((prev) => [...prev, ...files].slice(0, 10));
+      const newPhotos = files.map((file) => URL.createObjectURL(file));
+      setCommonPhotos((prev) => [...prev, ...newPhotos].slice(0, 10));
     }
   };
 
   const removePhoto = (index: number) => {
-    setCommonPhotoFiles(prev => prev.filter((_, i) => i !== index));
-    setCommonPhotos(prev => prev.filter((_, j) => j !== index));
+    setCommonPhotoFiles((prev) => prev.filter((_, i) => i !== index));
+    setCommonPhotos((prev) => prev.filter((_, j) => j !== index));
   };
 
   const handleIndividualPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      setIndividualPhotoFiles(prev => [...prev, ...files].slice(0, 10)); 
-      const newPhotos = files.map(file => URL.createObjectURL(file));
-      setIndividualPhotos(prev => [...prev, ...newPhotos].slice(0, 10));
+      setIndividualPhotoFiles((prev) => [...prev, ...files].slice(0, 10));
+      const newPhotos = files.map((file) => URL.createObjectURL(file));
+      setIndividualPhotos((prev) => [...prev, ...newPhotos].slice(0, 10));
     }
   };
 
   const removeIndividualPhoto = (index: number) => {
-    setIndividualPhotoFiles(prev => prev.filter((_, i) => i !== index));
-    setIndividualPhotos(prev => prev.filter((_, j) => j !== index));
+    setIndividualPhotoFiles((prev) => prev.filter((_, i) => i !== index));
+    setIndividualPhotos((prev) => prev.filter((_, j) => j !== index));
   };
 
   const handleSendCommon = async () => {
     if (!commonTitle.trim() || !commonContent.trim()) return;
-    
+
     setIsCommonGenerating(true);
     const photoUrls: string[] = [];
 
@@ -138,7 +154,7 @@ export default function NoticePage() {
           }
         }
       } catch (err) {
-        console.error("Image upload failed", err);
+        console.error('Image upload failed', err);
         alert('이미지 업로드에 실패했습니다. 다시 시도해주세요.');
         setIsCommonGenerating(false);
         return;
@@ -153,7 +169,7 @@ export default function NoticePage() {
       isRead: false,
       isSent: true,
       photoUrls,
-      photoUrl: photoUrls[0] || '' // 하위 호환
+      photoUrl: photoUrls[0] || '', // 하위 호환
     };
     try {
       await addNotice(newNotice as Notice);
@@ -176,7 +192,8 @@ export default function NoticePage() {
       const generated = await generateAICommonNotice(commonContent);
       setCommonContent(generated);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'AI 초안 생성 중 오류가 발생했습니다.';
+      const errorMessage =
+        error instanceof Error ? error.message : 'AI 초안 생성 중 오류가 발생했습니다.';
       alert(errorMessage);
     } finally {
       setIsCommonGenerating(false);
@@ -186,8 +203,13 @@ export default function NoticePage() {
   const handleGenerateDraft = async (childId: string) => {
     setIsGenerating(true);
     try {
-      const draft = await generateAINotice(childId, memos[childId] || '', memoLength, activitySummary);
-      setDrafts(prev => ({ ...prev, [childId]: draft }));
+      const draft = await generateAINotice(
+        childId,
+        memos[childId] || '',
+        memoLength,
+        activitySummary,
+      );
+      setDrafts((prev) => ({ ...prev, [childId]: draft }));
     } finally {
       setIsGenerating(false);
     }
@@ -195,9 +217,9 @@ export default function NoticePage() {
 
   const handleDraftChange = (childId: string, newContent: string) => {
     if (drafts[childId]) {
-      setDrafts(prev => ({
+      setDrafts((prev) => ({
         ...prev,
-        [childId]: { ...prev[childId], content: newContent }
+        [childId]: { ...prev[childId], content: newContent },
       }));
     }
   };
@@ -205,7 +227,7 @@ export default function NoticePage() {
   const handleSendIndividual = async (childId: string) => {
     const draft = drafts[childId];
     if (!draft) return;
-    
+
     setIsGenerating(true);
     const photoUrls: string[] = [];
 
@@ -218,7 +240,7 @@ export default function NoticePage() {
           }
         }
       } catch (err) {
-        console.error("Individual image upload failed", err);
+        console.error('Individual image upload failed', err);
         alert('이미지 업로드에 실패했습니다.');
         setIsGenerating(false);
         return;
@@ -226,22 +248,22 @@ export default function NoticePage() {
     }
 
     try {
-      await addNotice({ 
-        ...draft, 
+      await addNotice({
+        ...draft,
         isSent: true,
         photoUrls,
-        photoUrl: photoUrls[0] || '' 
+        photoUrl: photoUrls[0] || '',
       } as Notice);
       alert('개별 알림장이 해당 학부모님께 전송되었습니다.');
       setIndividualPhotos([]);
       setIndividualPhotoFiles([]);
       setSelectedChildId(null);
-      setDrafts(prev => {
+      setDrafts((prev) => {
         const newDrafts = { ...prev };
         delete newDrafts[childId];
         return newDrafts;
       });
-      setMemos(prev => {
+      setMemos((prev) => {
         const newMemos = { ...prev };
         delete newMemos[childId];
         return newMemos;
@@ -260,7 +282,6 @@ export default function NoticePage() {
     setIsGenerating(true);
     const photoUrls: string[] = [];
 
-
     if (individualPhotoFiles.length > 0) {
       try {
         for (const file of individualPhotoFiles) {
@@ -270,14 +291,14 @@ export default function NoticePage() {
           }
         }
       } catch (err) {
-        console.error("Manual individual image upload failed", err);
+        console.error('Manual individual image upload failed', err);
         alert('이미지 업로드에 실패했습니다.');
         setIsGenerating(false);
         return;
       }
     }
 
-    const child = allChildren.find(c => c.id === childId);
+    const child = allChildren.find((c) => c.id === childId);
     const newNotice: Partial<Notice> = {
       type: 'individual',
       childId,
@@ -288,7 +309,7 @@ export default function NoticePage() {
       isRead: false,
       isSent: true,
       photoUrls,
-      photoUrl: photoUrls[0] || ''
+      photoUrl: photoUrls[0] || '',
     };
 
     try {
@@ -297,7 +318,7 @@ export default function NoticePage() {
       setIndividualPhotos([]);
       setIndividualPhotoFiles([]);
       setSelectedChildId(null);
-      setMemos(prev => {
+      setMemos((prev) => {
         const newMemos = { ...prev };
         delete newMemos[childId];
         return newMemos;
@@ -341,7 +362,7 @@ export default function NoticePage() {
             <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
               <Megaphone size={18} className="text-blue-500" /> 공통 알림장 작성
             </h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">제목</label>
@@ -350,14 +371,14 @@ export default function NoticePage() {
                   placeholder="예: 4월 봄소풍 안내"
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-blue-400 focus:bg-white transition-all"
                   value={commonTitle}
-                  onChange={e => setCommonTitle(e.target.value)}
+                  onChange={(e) => setCommonTitle(e.target.value)}
                 />
               </div>
 
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <label className="block text-xs font-bold text-slate-500">내용 (공지사항)</label>
-                  <button 
+                  <button
                     onClick={handleGenerateCommonDraft}
                     disabled={isCommonGenerating || !commonContent.trim()}
                     className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg hover:bg-indigo-100 disabled:opacity-50 transition-colors flex items-center gap-1 active:scale-95"
@@ -370,26 +391,31 @@ export default function NoticePage() {
                   placeholder="학부모님들께 전달할 공통 내용을 간단히 입력 후 'AI 내용 다듬기'를 눌러보세요!"
                   className={`w-full h-32 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-blue-400 focus:bg-white transition-all resize-none ${isCommonGenerating ? 'opacity-50 pointer-events-none' : ''}`}
                   value={commonContent}
-                  onChange={e => setCommonContent(e.target.value)}
+                  onChange={(e) => setCommonContent(e.target.value)}
                   disabled={isCommonGenerating}
                 />
               </div>
 
               <div className="space-y-3">
-                <label className="block text-xs font-bold text-slate-500 mb-1">사진 첨부 (최대 10장)</label>
-                
+                <label className="block text-xs font-bold text-slate-500 mb-1">
+                  사진 첨부 (최대 10장)
+                </label>
+
                 {/* Photo Previews */}
                 {commonPhotos.length > 0 && (
                   <div className="flex gap-3 overflow-x-auto pt-2 pb-2 scrollbar-hide">
                     {commonPhotos.map((photo, index) => (
                       <div key={index} className="relative flex-shrink-0 w-24 h-24 group">
-                        <img 
-                          src={photo} 
-                          alt={`Preview ${index}`} 
+                        <img
+                          src={photo}
+                          alt={`Preview ${index}`}
                           className="w-full h-full object-cover rounded-xl border border-slate-200"
                         />
                         <button
-                          onClick={(e) => { e.preventDefault(); removePhoto(index); }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            removePhoto(index);
+                          }}
                           className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
                         >
                           <X size={14} />
@@ -400,7 +426,13 @@ export default function NoticePage() {
                 )}
 
                 <label className="flex items-center justify-center gap-2 w-full h-24 border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-all font-semibold relative overflow-hidden">
-                  <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotoUpload} />
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    multiple
+                    onChange={handlePhotoUpload}
+                  />
                   <div className="flex flex-col items-center gap-1 text-slate-400">
                     <ImageIcon size={24} />
                     <span className="text-xs">사진 추가 (다중 선택 가능)</span>
@@ -424,16 +456,19 @@ export default function NoticePage() {
             <div className="flex flex-col gap-3">
               {commonNotices.length > 0 ? (
                 commonNotices.map((n) => (
-                  <div key={n.id} className="p-4 bg-white border border-slate-200 rounded-2xl group relative overflow-hidden">
+                  <div
+                    key={n.id}
+                    className="p-4 bg-white border border-slate-200 rounded-2xl group relative overflow-hidden"
+                  >
                     <div className="absolute top-0 right-0 p-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
+                      <button
                         onClick={() => navigate(PATH.TEACHER.NOTICE_EDIT.replace(':id', n.id))}
                         className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
                         title="수정"
                       >
                         <Edit3 size={14} />
                       </button>
-                      <button 
+                      <button
                         onClick={async () => {
                           if (window.confirm('정말 삭제하시겠습니까?')) {
                             await deleteNotice(n.id);
@@ -449,29 +484,37 @@ export default function NoticePage() {
                     <div className="flex justify-between items-start mb-2">
                       <p className="font-bold text-sm text-slate-800">{n.title}</p>
                     </div>
-                    <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-line">{n.content}</p>
+                    <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-line">
+                      {n.content}
+                    </p>
                     {/* Multiple Photos Display */}
-                    {((n.photoUrls && n.photoUrls.length > 0) || (n.photoUrl && n.photoUrl !== 'string')) && (
+                    {((n.photoUrls && n.photoUrls.length > 0) ||
+                      (n.photoUrl && n.photoUrl !== 'string')) && (
                       <div className="flex gap-2 overflow-x-auto mt-3 pb-2 scrollbar-hide">
-                        {(n.photoUrls && n.photoUrls.length > 0 ? n.photoUrls : [n.photoUrl!]).map((photo, index, arr) => (
-                          <div 
-                            key={index}
-                            className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden border border-slate-100 cursor-zoom-in group/img"
-                            onClick={() => {
-                              setViewerImages(arr.map(p => getFullImageUrl(p)));
-                              setViewerIndex(index);
-                            }}
-                          >
-                            <img 
-                              src={getFullImageUrl(photo)} 
-                              alt={`Attached ${index}`} 
-                              className="w-full h-full object-cover transition-transform group-hover/img:scale-110" 
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).parentElement?.style.setProperty('display', 'none');
+                        {(n.photoUrls && n.photoUrls.length > 0 ? n.photoUrls : [n.photoUrl!]).map(
+                          (photo, index, arr) => (
+                            <div
+                              key={index}
+                              className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden border border-slate-100 cursor-zoom-in group/img"
+                              onClick={() => {
+                                setViewerImages(arr.map((p) => getFullImageUrl(p)));
+                                setViewerIndex(index);
                               }}
-                            />
-                          </div>
-                        ))}
+                            >
+                              <img
+                                src={getFullImageUrl(photo)}
+                                alt={`Attached ${index}`}
+                                className="w-full h-full object-cover transition-transform group-hover/img:scale-110"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).parentElement?.style.setProperty(
+                                    'display',
+                                    'none',
+                                  );
+                                }}
+                              />
+                            </div>
+                          ),
+                        )}
                       </div>
                     )}
                   </div>
@@ -487,46 +530,56 @@ export default function NoticePage() {
       )}
 
       {activeTab === 'individual' && (
-       <div className="animate-fade-in">
-         {!selectedChildId ? (
-          <div>
-            {/* 공통 컴포넌트 사용 + develop의 데이터 로직 적용 */}
-            <StatusDashboard 
-              label="오늘 알림장 작성 완료" 
-              completedCount={completedCount} 
-              totalCount={allChildren.length}
-             />
-             <div className="mb-4 flex items-center justify-between px-1">
-               <h3 className="text-sm font-bold text-slate-700">원아 목록</h3>
-                <span className="text-[11px] font-bold text-emerald-600 bg-emerald-100 px-2.5 py-1 rounded-full">
-                 총 {allChildren.length}명
-                </span>
-             </div>
-           {/* 아이 목록 그리드 (공통 컴포넌트 적용) */}
-             <ChildListGrid 
-              childrenData={allChildren}
-              onChildClick={(id) => setSelectedChildId(id)}
-              checkCompletion={(id) => completedIndividualChildIds.has(id)}
-              completedLabel="발송완료"
+        <div className="animate-fade-in">
+          {!selectedChildId ? (
+            <div>
+              {/* 공통 컴포넌트 사용 + develop의 데이터 로직 적용 */}
+              <StatusDashboard
+                label="오늘 알림장 작성 완료"
+                completedCount={completedCount}
+                totalCount={allChildren.length}
               />
-           </div>
-        ) : (
+              <div className="mb-4 flex items-center justify-between px-1">
+                <h3 className="text-sm font-bold text-slate-700">원아 목록</h3>
+                <span className="text-[11px] font-bold text-emerald-600 bg-emerald-100 px-2.5 py-1 rounded-full">
+                  총 {allChildren.length}명
+                </span>
+              </div>
+              {/* 아이 목록 그리드 (공통 컴포넌트 적용) */}
+              <ChildListGrid
+                childrenData={allChildren}
+                onChildClick={(id) => setSelectedChildId(id)}
+                checkCompletion={(id) => completedIndividualChildIds.has(id)}
+                completedLabel="발송완료"
+              />
+            </div>
+          ) : (
             <div className="animate-fade-in">
               {/* Selected Child Header */}
               <div className="flex items-center justify-between mb-6 bg-blue-50/50 p-3 rounded-2xl border border-blue-100">
                 <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mr-4 shadow-sm overflow-hidden border border-blue-200">
                   {(() => {
-                    const selChild = allChildren.find(c => c.id === selectedChildId);
+                    const selChild = allChildren.find((c) => c.id === selectedChildId);
                     return selChild?.profileImageUrl ? (
-                      <img src={getFullImageUrl(selChild.profileImageUrl)} alt={selChild.name} className="w-full h-full object-cover" />
+                      <img
+                        src={getFullImageUrl(selChild.profileImageUrl)}
+                        alt={selChild.name}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
-                      <span className="text-2xl leading-none">{selChild?.profileEmoji || '👶'}</span>
+                      <span className="text-2xl leading-none">
+                        {selChild?.profileEmoji || '👶'}
+                      </span>
                     );
                   })()}
                 </div>
                 <div>
-                  <h2 className="font-black text-blue-900">{allChildren.find(c => c.id === selectedChildId)?.name || '아이'} 알림장 작성</h2>
-                  <p className="text-xs text-blue-400 font-bold uppercase tracking-wider">Individual Notice</p>
+                  <h2 className="font-black text-blue-900">
+                    {allChildren.find((c) => c.id === selectedChildId)?.name || '아이'} 알림장 작성
+                  </h2>
+                  <p className="text-xs text-blue-400 font-bold uppercase tracking-wider">
+                    Individual Notice
+                  </p>
                 </div>
                 <button
                   className="w-8 h-8 flex items-center justify-center bg-white rounded-full text-slate-400 hover:text-slate-600 shadow-sm"
@@ -538,96 +591,115 @@ export default function NoticePage() {
 
               {/* 반 활동 요약 연동 */}
               <div className="mb-5">
-                <label className="block text-[11px] font-bold text-slate-500 mb-2 ml-1">오늘 반 공통 활동 요약</label>
+                <label className="block text-[11px] font-bold text-slate-500 mb-2 ml-1">
+                  오늘 반 공통 활동 요약
+                </label>
                 <textarea
                   className="w-full bg-amber-50 text-amber-900 border border-amber-200/50 rounded-xl px-4 py-3 text-xs outline-none focus:border-amber-400 focus:bg-amber-100/50 transition-all resize-none h-16 leading-relaxed"
                   placeholder="예: 오늘은 미세먼지가 없어 공원에서 야외활동을 했습니다."
                   value={activitySummary}
-                  onChange={e => setActivitySummary(e.target.value)}
+                  onChange={(e) => setActivitySummary(e.target.value)}
                 />
               </div>
 
               {/* Draft Generation Panel */}
               {!drafts[selectedChildId] || isGenerating ? (
                 <div className="bg-white border border-slate-100 shadow-sm rounded-3xl p-5 mb-4 relative overflow-hidden">
-                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500"></div>
-                   
-                   <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                     특이사항 간단 메모
-                   </label>
-                   <textarea
-                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-300 focus:bg-white transition-all resize-none min-h-[100px] mb-4 shadow-inner"
-                     placeholder='날것의 문장을 편하게 적어주세요! 예: "점심시간 밥 조금 남김. 미술시간에 손에 물감 묻었다고 짜증냄. 손씻고 기분 풀림"'
-                     value={memos[selectedChildId] || ''}
-                     onChange={e => setMemos(prev => ({ ...prev, [selectedChildId]: e.target.value }))}
-                     disabled={isGenerating}
-                   />
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500"></div>
 
-                   <div className="flex items-center justify-between mb-4 mt-2">
-                     <span className="text-[11px] font-bold text-slate-500">알림장 길이</span>
-                     <div className="flex gap-2">
-                       <button
-                         className={`text-xs px-4 py-1.5 rounded-full font-bold transition-all ${memoLength === 'short' ? 'bg-slate-800 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-                         onClick={() => setMemoLength('short')}
-                         disabled={isGenerating}
-                       >
-                         단문 요약
-                       </button>
-                       <button
-                         className={`text-xs px-4 py-1.5 rounded-full font-bold transition-all ${memoLength === 'long' ? 'bg-slate-800 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-                         onClick={() => setMemoLength('long')}
-                         disabled={isGenerating}
-                       >
-                         긴 글 풀이
-                       </button>
-                     </div>
-                   </div>
+                  <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
+                    특이사항 간단 메모
+                  </label>
+                  <textarea
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-300 focus:bg-white transition-all resize-none min-h-[100px] mb-4 shadow-inner"
+                    placeholder='날것의 문장을 편하게 적어주세요! 예: "점심시간 밥 조금 남김. 미술시간에 손에 물감 묻었다고 짜증냄. 손씻고 기분 풀림"'
+                    value={memos[selectedChildId] || ''}
+                    onChange={(e) =>
+                      setMemos((prev) => ({ ...prev, [selectedChildId]: e.target.value }))
+                    }
+                    disabled={isGenerating}
+                  />
 
+                  <div className="flex items-center justify-between mb-4 mt-2">
+                    <span className="text-[11px] font-bold text-slate-500">알림장 길이</span>
                     <div className="flex gap-2">
                       <button
-                        className="flex-[2] py-3.5 bg-slate-800 text-white font-black rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm"
-                        onClick={() => handleGenerateDraft(selectedChildId)}
+                        className={`text-xs px-4 py-1.5 rounded-full font-bold transition-all ${memoLength === 'short' ? 'bg-slate-800 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                        onClick={() => setMemoLength('short')}
                         disabled={isGenerating}
                       >
-                        {isGenerating ? (
-                          <span className="animate-pulse">초안 작성 중...</span>
-                        ) : (
-                          <>AI 초안 만들기</>
-                        )}
+                        단문 요약
                       </button>
                       <button
-                        className="flex-1 py-3.5 bg-white border-2 border-slate-800 text-slate-800 font-bold rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm"
-                        onClick={() => handleSendManualIndividual(selectedChildId)}
-                        disabled={isGenerating || !memos[selectedChildId]?.trim()}
+                        className={`text-xs px-4 py-1.5 rounded-full font-bold transition-all ${memoLength === 'long' ? 'bg-slate-800 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                        onClick={() => setMemoLength('long')}
+                        disabled={isGenerating}
                       >
-                        바로 전송
+                        긴 글 풀이
                       </button>
                     </div>
+                  </div>
 
-                    {/* Manual Photos Upload */}
-                    <div className="mt-4 pt-4 border-t border-slate-50">
-                      <label className="block text-[11px] font-bold text-slate-400 mb-2 ml-1">사진 첨부</label>
-                      {individualPhotos.length > 0 && (
-                        <div className="flex gap-2 overflow-x-auto pt-2 pb-2 scrollbar-hide mb-2">
-                          {individualPhotos.map((photo, index) => (
-                            <div key={index} className="relative flex-shrink-0 w-16 h-16 group">
-                              <img src={photo} alt="" className="w-full h-full object-cover rounded-lg border border-slate-100" />
-                              <button
-                                onClick={(e) => { e.preventDefault(); removeIndividualPhoto(index); }}
-                                className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center shadow hover:bg-red-600 transition-colors"
-                              >
-                                <X size={10} />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
+                  <div className="flex gap-2">
+                    <button
+                      className="flex-[2] py-3.5 bg-slate-800 text-white font-black rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm"
+                      onClick={() => handleGenerateDraft(selectedChildId)}
+                      disabled={isGenerating}
+                    >
+                      {isGenerating ? (
+                        <span className="animate-pulse">초안 작성 중...</span>
+                      ) : (
+                        <>AI 초안 만들기</>
                       )}
-                      <label className="flex items-center justify-center gap-2 w-full h-12 border border-dashed border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-all text-slate-400">
-                        <input type="file" className="hidden" accept="image/*" multiple onChange={handleIndividualPhotoUpload} />
-                        <ImageIcon size={14} />
-                        <span className="text-[10px] font-bold">사진 선택</span>
-                      </label>
-                    </div>
+                    </button>
+                    <button
+                      className="flex-1 py-3.5 bg-white border-2 border-slate-800 text-slate-800 font-bold rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm"
+                      onClick={() => handleSendManualIndividual(selectedChildId)}
+                      disabled={isGenerating || !memos[selectedChildId]?.trim()}
+                    >
+                      바로 전송
+                    </button>
+                  </div>
+
+                  {/* Manual Photos Upload */}
+                  <div className="mt-4 pt-4 border-t border-slate-50">
+                    <label className="block text-[11px] font-bold text-slate-400 mb-2 ml-1">
+                      사진 첨부
+                    </label>
+                    {individualPhotos.length > 0 && (
+                      <div className="flex gap-2 overflow-x-auto pt-2 pb-2 scrollbar-hide mb-2">
+                        {individualPhotos.map((photo, index) => (
+                          <div key={index} className="relative flex-shrink-0 w-16 h-16 group">
+                            <img
+                              src={photo}
+                              alt=""
+                              className="w-full h-full object-cover rounded-lg border border-slate-100"
+                            />
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                removeIndividualPhoto(index);
+                              }}
+                              className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center shadow hover:bg-red-600 transition-colors"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <label className="flex items-center justify-center gap-2 w-full h-12 border border-dashed border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-all text-slate-400">
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        multiple
+                        onChange={handleIndividualPhotoUpload}
+                      />
+                      <ImageIcon size={14} />
+                      <span className="text-[10px] font-bold">사진 선택</span>
+                    </label>
+                  </div>
                 </div>
               ) : (
                 /* Generated Draft Panel */
@@ -643,7 +715,7 @@ export default function NoticePage() {
                       <RefreshCcw size={10} /> 다시 생성
                     </button>
                   </div>
-                  
+
                   <textarea
                     className="w-full bg-purple-50/30 border border-purple-100 rounded-xl px-4 py-3 text-sm text-slate-800 outline-none focus:border-purple-400 transition-all resize-none min-h-[160px] leading-relaxed mb-4 shadow-inner"
                     value={drafts[selectedChildId].content}
@@ -652,18 +724,23 @@ export default function NoticePage() {
 
                   {/* Individual Photos Upload in Draft Panel */}
                   <div className="space-y-3 mb-4">
-                    <label className="block text-[11px] font-bold text-slate-500 ml-1">사진 추가</label>
+                    <label className="block text-[11px] font-bold text-slate-500 ml-1">
+                      사진 추가
+                    </label>
                     {individualPhotos.length > 0 && (
                       <div className="flex gap-2 overflow-x-auto pt-2 pb-2 scrollbar-hide">
                         {individualPhotos.map((photo, index) => (
                           <div key={index} className="relative flex-shrink-0 w-20 h-20 group">
-                            <img 
-                              src={photo} 
-                              alt={`Preview ${index}`} 
+                            <img
+                              src={photo}
+                              alt={`Preview ${index}`}
                               className="w-full h-full object-cover rounded-xl border border-slate-100"
                             />
                             <button
-                              onClick={(e) => { e.preventDefault(); removeIndividualPhoto(index); }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                removeIndividualPhoto(index);
+                              }}
                               className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-600 transition-colors"
                             >
                               <X size={12} />
@@ -673,7 +750,13 @@ export default function NoticePage() {
                       </div>
                     )}
                     <label className="flex items-center justify-center gap-2 w-full h-20 border-2 border-dashed border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50 transition-all relative overflow-hidden">
-                      <input type="file" className="hidden" accept="image/*" multiple onChange={handleIndividualPhotoUpload} />
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        multiple
+                        onChange={handleIndividualPhotoUpload}
+                      />
                       <div className="flex flex-col items-center gap-0.5 text-slate-400">
                         <ImageIcon size={18} />
                         <span className="text-[10px] font-bold">사진 추가</span>
@@ -694,48 +777,58 @@ export default function NoticePage() {
               {/* Selected Child History */}
               <div className="mt-8 mb-4 animate-fade-in">
                 <h4 className="text-sm font-bold text-slate-600 mb-3 ml-2 flex items-center gap-1.5">
-                  <MessageSquare size={16} className="text-slate-400" /> 
-                  이 아이의 최근 알림장 전송 내역
+                  <MessageSquare size={16} className="text-slate-400" />이 아이의 최근 알림장 전송
+                  내역
                 </h4>
                 <div className="flex flex-col gap-3">
                   {individualNotices.filter((n) => n.childId === selectedChildId).length > 0 ? (
                     individualNotices
                       .filter((n) => n.childId === selectedChildId)
                       .map((n) => (
-                      <div key={n.id} className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm group relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={() => navigate(PATH.TEACHER.NOTICE_EDIT.replace(':id', n.id))}
-                            className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
-                            title="수정"
-                          >
-                            <Edit3 size={14} />
-                          </button>
-                          <button 
-                            onClick={async () => {
-                              if (window.confirm('정말 삭제하시겠습니까?')) {
-                                await deleteNotice(n.id);
+                        <div
+                          key={n.id}
+                          className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm group relative overflow-hidden"
+                        >
+                          <div className="absolute top-0 right-0 p-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() =>
+                                navigate(PATH.TEACHER.NOTICE_EDIT.replace(':id', n.id))
                               }
-                            }}
-                            className="p-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors"
-                            title="삭제"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                              className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                              title="수정"
+                            >
+                              <Edit3 size={14} />
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (window.confirm('정말 삭제하시겠습니까?')) {
+                                  await deleteNotice(n.id);
+                                }
+                              }}
+                              className="p-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors"
+                              title="삭제"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                          <div className="flex justify-between items-start mb-2">
+                            <p className="font-bold text-[11px] text-blue-600">{n.date}</p>
+                            {n.type !== 'common' &&
+                              (n.isRead ? (
+                                <p className="text-[10px] text-slate-400 font-bold px-2 py-0.5 bg-slate-100 rounded-md">
+                                  읽음
+                                </p>
+                              ) : (
+                                <p className="text-[10px] text-amber-500 font-bold px-2 py-0.5 bg-amber-50 rounded-md">
+                                  안읽음
+                                </p>
+                              ))}
+                          </div>
+                          <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-line bg-slate-50 p-3 rounded-xl mt-2">
+                            {n.content}
+                          </p>
                         </div>
-                        <div className="flex justify-between items-start mb-2">
-                          <p className="font-bold text-[11px] text-blue-600">{n.date}</p>
-                          {n.type !== 'common' && (
-                            n.isRead ? (
-                               <p className="text-[10px] text-slate-400 font-bold px-2 py-0.5 bg-slate-100 rounded-md">읽음</p>
-                            ) : (
-                               <p className="text-[10px] text-amber-500 font-bold px-2 py-0.5 bg-amber-50 rounded-md">안읽음</p>
-                            )
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-line bg-slate-50 p-3 rounded-xl mt-2">{n.content}</p>
-                      </div>
-                    ))
+                      ))
                   ) : (
                     <div className="text-center text-xs text-slate-400 py-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                       최근 알림장 내역이 없습니다.
@@ -748,10 +841,10 @@ export default function NoticePage() {
         </div>
       )}
       {viewerImages.length > 0 && (
-        <ImageViewer 
-          images={viewerImages} 
+        <ImageViewer
+          images={viewerImages}
           initialIndex={viewerIndex}
-          onClose={() => setViewerImages([])} 
+          onClose={() => setViewerImages([])}
         />
       )}
     </div>
