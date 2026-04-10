@@ -1,5 +1,6 @@
 import { CheckCircle2 } from 'lucide-react';
 import type { Child } from '../../types';
+import { ChildAvatar } from '../common/ChildAvatar';
 
 interface ChildListGridProps {
   childrenData: Child[];
@@ -34,9 +35,15 @@ export function ChildListGrid({
               </div>
             )}
             
-            <span className={`text-3xl p-2.5 rounded-full leading-none transition-colors shadow-inner ${isCompleted ? 'bg-white' : 'bg-slate-50'}`}>
-              {child.profileEmoji}
-            </span>
+            <div className={`w-14 h-14 p-1 rounded-full transition-colors shadow-inner ${isCompleted ? 'bg-white' : 'bg-slate-50'}`}>
+              <ChildAvatar 
+                name={child.name}
+                profileImageUrl={child.profileImageUrl}
+                profileEmoji={child.profileEmoji}
+                className="w-full h-full rounded-full"
+                emojiClassName="text-3xl"
+              />
+            </div>
             
             <span className={`font-bold text-sm ${isCompleted ? 'text-emerald-900' : 'text-slate-700'}`}>
               {child.name}

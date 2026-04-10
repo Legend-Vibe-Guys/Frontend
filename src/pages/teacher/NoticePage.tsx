@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ChildAvatar } from '../../components/common/ChildAvatar';
 import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../../hooks';
 import { formatDateISO } from '../../utils/date';
@@ -9,7 +10,6 @@ import {
   Send,
   MessageSquare,
   Image as ImageIcon,
-  CheckCircle,
   RefreshCcw,
   X,
   Edit3,
@@ -517,10 +517,15 @@ export default function NoticePage() {
                 <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mr-4 shadow-sm overflow-hidden border border-blue-200">
                   {(() => {
                     const selChild = allChildren.find(c => c.id === selectedChildId);
-                    return selChild?.profileImageUrl ? (
-                      <img src={getFullImageUrl(selChild.profileImageUrl)} alt={selChild.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-2xl leading-none">{selChild?.profileEmoji || '👶'}</span>
+                    if (!selChild) return null;
+                    return (
+                      <ChildAvatar 
+                        name={selChild.name}
+                        profileImageUrl={selChild.profileImageUrl}
+                        profileEmoji={selChild.profileEmoji}
+                        className="w-full h-full rounded-2xl"
+                        emojiClassName="text-2xl"
+                      />
                     );
                   })()}
                 </div>

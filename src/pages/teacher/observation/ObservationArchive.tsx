@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { CustomSelect } from '../../../components/teacher/CustomSelect';
 import type { ObservationLog, Child, NuriDomain } from '../../../types';
+import { ChildAvatar } from '../../../components/common/ChildAvatar';
 
 interface ObservationArchiveProps {
   observations: ObservationLog[];
@@ -70,17 +71,23 @@ export function ObservationArchive({ observations, children }: ObservationArchiv
 
       <div className="space-y-4">
         {filteredObservations.length > 0 ? (
-          filteredObservations.map(obs => (
-            <div key={obs.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden hover:border-indigo-200 transition-all">
-              <div 
-                className="p-5 flex items-center justify-between cursor-pointer" 
-                onClick={() => setExpandedObs(expandedObs === obs.id ? null : obs.id)}
-              >
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-2xl shrink-0">
-                    {children.find(c => c.id === obs.childId)?.profileEmoji}
-                  </div>
-                  <div className="min-w-0">
+          filteredObservations.map(obs => {
+            const childData = children.find(c => c.id === obs.childId);
+            return (
+              <div key={obs.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden hover:border-indigo-200 transition-all">
+                <div 
+                  className="p-5 flex items-center justify-between cursor-pointer" 
+                  onClick={() => setExpandedObs(expandedObs === obs.id ? null : obs.id)}
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <ChildAvatar 
+                      name={obs.childName}
+                      profileImageUrl={childData?.profileImageUrl}
+                      profileEmoji={childData?.profileEmoji || '👶'}
+                      className="w-12 h-12 bg-slate-50 rounded-full"
+                      emojiClassName="text-2xl"
+                    />
+                    <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="font-black text-slate-900 truncate">{obs.childName}</span>
                       <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
@@ -108,8 +115,9 @@ export function ObservationArchive({ observations, children }: ObservationArchiv
                    </div>
                 </div>
               )}
-            </div>
-          ))
+              </div>
+            );
+          })
         ) : (
           <div className="py-20 text-center text-slate-400 font-bold bg-white rounded-[2rem] border-2 border-dashed border-slate-100">
             기록 데이터가 없습니다.
