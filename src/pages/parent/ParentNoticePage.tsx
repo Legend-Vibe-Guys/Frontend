@@ -15,6 +15,7 @@ export default function ParentNoticePage() {
   const [tab, setTab] = useState<'common' | 'individual'>('common');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [viewerImages, setViewerImages] = useState<string[]>([]);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
 
   const commonNotices = notices.filter((n) => n.type === 'common');

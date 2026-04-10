@@ -18,6 +18,7 @@ export default function ParentHomePage() {
   const { user } = useAuth();
   const { children, observations, notices, schedules } = useAppData();
   const [viewerImages, setViewerImages] = useState<string[]>([]);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   const myChild = children[0];
 
@@ -209,8 +210,16 @@ export default function ParentHomePage() {
               
               {((childNotices[0].photoUrls && childNotices[0].photoUrls.length > 0) || (childNotices[0].photoUrl && childNotices[0].photoUrl !== 'string')) && (
                 <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-                  {(childNotices[0].photoUrls && childNotices[0].photoUrls.length > 0 ? childNotices[0].photoUrls : [childNotices[0].photoUrl!]).slice(0, 3).map((photo, idx) => (
-                    <div key={idx} className="flex-shrink-0 w-20 h-20 rounded-[1.2rem] overflow-hidden border border-slate-50">
+                  {(childNotices[0].photoUrls && childNotices[0].photoUrls.length > 0 ? childNotices[0].photoUrls : [childNotices[0].photoUrl!]).slice(0, 3).map((photo, idx, arr) => (
+                    <div 
+                      key={idx} 
+                      className="flex-shrink-0 w-20 h-20 rounded-[1.2rem] overflow-hidden border border-slate-50 cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setViewerImages(arr.map(p => getFullImageUrl(p)));
+                        setViewerIndex(idx);
+                      }}
+                    >
                       <img src={getFullImageUrl(photo)} alt="Preview" className="w-full h-full object-cover" />
                     </div>
                   ))}
