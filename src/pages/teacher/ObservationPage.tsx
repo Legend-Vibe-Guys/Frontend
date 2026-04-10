@@ -11,7 +11,7 @@ import type { ObservationLog } from '../../types';
 type PageType = 'home' | 'quick_list' | 'quick_memo' | 'archive' | 'report';
 
 export default function ObservationPage() {
-  const { children, observations, generateAIObservation, addObservation, generateMonthlyReport } = useAppData();
+  const { children, observations, generateAIObservation, addObservation, deleteObservation, updateObservation } = useAppData();
   
   const [activePage, setActivePage] = useState<PageType>('home');
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
@@ -23,6 +23,8 @@ export default function ObservationPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('신체운동·건강');
 
 
+
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleGoBack = () => {
     if (activePage === 'quick_memo') setActivePage('quick_list');
@@ -41,13 +43,52 @@ export default function ObservationPage() {
     }
   };
 
-  const handleSaveToArchive = () => {
-    if (aiDraft) {
-      addObservation(aiDraft);
+  const handleSaveToArchive = async () => {
+    if (aiDraft && !isSaving) {
+      setIsSaving(true);
+      try {
+        await addObservation(aiDraft);
+        alert("생활기록부로 저장되었습니다.");
+        setQuickMemo('');
+        setAiDraft(null);
+        setActivePage('archive');
+      } catch (error) {
+        console.error("Save error:", error);
+        alert("저장 중 오류가 발생했습니다. 다시 시도해주세요.");
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  const handleSaveDirect = async () => {
+    if (!selectedChildId || !quickMemo.trim() || !selectedCategory || isSaving) return;
+    
+    const selectedChild = children.find(c => c.id === selectedChildId);
+    if (!selectedChild) return;
+
+    setIsSaving(true);
+    try {
+      const newLog: ObservationLog = {
+        id: `obs-${Date.now()}`,
+        childId: selectedChildId,
+        childName: selectedChild.name,
+        date: new Date().toISOString().split('T')[0],
+        categories: [{ name: selectedCategory, analysis: "" }],
+        content: quickMemo,
+        evaluation: "(교사 직접 작성)",
+        isAIGenerated: false,
+      };
+
+      await addObservation(newLog);
       alert("생활기록부로 저장되었습니다.");
       setQuickMemo('');
-      setAiDraft(null);
       setActivePage('archive');
+    } catch (error) {
+      console.error("Direct save error:", error);
+      alert("저장 중 오류가 발생했습니다.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -89,11 +130,13 @@ export default function ObservationPage() {
              selectedChild={children.find(c => c.id === selectedChildId)!}
              memo={quickMemo} setMemo={setQuickMemo}
              isGenerating={isGeneratingAIObs}
+             isSaving={isSaving}
              selectedCategory={selectedCategory}
              setSelectedCategory={setSelectedCategory}
              onGenerateAI={handleGenerateAI}
              aiDraft={aiDraft} setAiDraft={setAiDraft}
              onSave={handleSaveToArchive}
+             onSaveDirect={handleSaveDirect}
            />
         </div>
       )}
@@ -104,7 +147,12 @@ export default function ObservationPage() {
              <button onClick={handleGoBack} className="w-12 h-12 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-all active:scale-95"><ArrowLeft size={24} /></button>
              <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2 truncate"><Users size={28} className="text-indigo-500 shrink-0" /> 생활 기록부</h2>
           </div>
-          <ObservationArchive observations={observations} children={children} />
+          <ObservationArchive 
+            observations={observations} 
+            children={children} 
+            onDelete={deleteObservation} 
+            onUpdate={updateObservation}
+          />
         </div>
       )}
 
@@ -114,7 +162,7 @@ export default function ObservationPage() {
              <button onClick={handleGoBack} className="w-12 h-12 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-all active:scale-95"><ArrowLeft size={24} /></button>
              <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2 truncate"><Users size={28} className="text-indigo-500 shrink-0" /> 종합 평가 생성</h2>
           </div>
-          <MonthlyReportView children={children} observations={observations} onGenerateReport={generateMonthlyReport} />
+          <MonthlyReportView children={children} observations={observations} />
         </div>
       )}
 

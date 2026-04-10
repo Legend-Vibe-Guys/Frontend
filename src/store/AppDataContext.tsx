@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { useAuth } from './AuthContext';
 
-import { studentsAPI, noticeAPI, scheduleAPI, observationAPI } from '../api/api';
+import { studentsAPI, noticeAPI, scheduleAPI, observationAPI, monthlyReportAPI } from '../api/api';
 import { formatDateISO } from '../utils/date';
 
 import type {
@@ -58,10 +58,15 @@ interface AppDataContextType {
     summaryContext: string
   ) => Promise<Notice[]>;
   addObservation: (observation: ObservationLog) => Promise<void>;
+  deleteObservation: (id: string) => Promise<void>;
+  updateObservation: (id: string, data: Partial<ObservationLog>) => Promise<void>;
   generateAIObservation: (childId: string, memo: string, category: string) => Promise<ObservationLog>;
   generateMonthlyReport: (childId: string, month: string) => Promise<MonthlyReport>;
-  saveMonthlyReport: (report: MonthlyReport) => void;
-  deleteMonthlyReport: (reportId: string) => void;
+  saveMonthlyReport: (report: MonthlyReport) => Promise<void>;
+  deleteMonthlyReport: (reportId: string) => Promise<void>;
+  fetchMonthlyReports: (childId: string) => Promise<void>;
+  sendMonthlyReportToParent: (report: MonthlyReport) => Promise<void>;
+  saveMonthlyReportLocal?: (report: MonthlyReport) => void;
   toggleScheduleComplete: (scheduleId: string) => Promise<void>;
   addSchedule: (schedule: Partial<ScheduleItem>) => Promise<void>;
   updateSchedule: (id: string, data: Partial<ScheduleItem>) => Promise<void>;
@@ -345,6 +350,47 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
     }
   }, []);
 
+  const deleteObservation = useCallback(async (id: string) => {
+    try {
+      await observationAPI.delete(id);
+      
+      setObservations((prev) => prev.filter((o) => o.id !== id));
+      
+      // 통계 업데이트
+      setStats(prev => {
+        const deletedObs = observations.find(o => o.id === id);
+        const today = formatDateISO();
+        if (deletedObs && deletedObs.date === today) {
+          return { ...prev, observationCompleted: Math.max(0, prev.observationCompleted - 1) };
+        }
+        return prev;
+      });
+    } catch (error) {
+      console.error("Failed to delete observation", error);
+      throw error;
+    }
+  }, [observations]);
+
+  const updateObservation = useCallback(async (id: string, data: Partial<ObservationLog>) => {
+    try {
+      // API용 필드로 변환
+      const apiData: Partial<ObservationRecord> = {};
+      if (data.content !== undefined) apiData.observationContent = data.content;
+      if (data.evaluation !== undefined) apiData.observationEvaluation = data.evaluation;
+      if (data.date !== undefined) apiData.date = data.date;
+
+      await observationAPI.update(id, apiData);
+      
+      // 상태 업데이트
+      setObservations((prev) => 
+        prev.map((o) => (o.id === id ? { ...o, ...data } : o))
+      );
+    } catch (error) {
+      console.error("Failed to update observation", error);
+      throw error;
+    }
+  }, []);
+
   const generateAIObservation = useCallback(
     async (childId: string, memo: string, category: string): Promise<ObservationLog> => {
       const child = childrenData.find((c) => c.id === childId);
@@ -403,20 +449,69 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
     [childrenData]
   );
   
-  const saveMonthlyReport = useCallback((report: MonthlyReport) => {
-    setMonthlyReports((prev) => {
-      const existingIndex = prev.findIndex(r => r.id === report.id);
-      if (existingIndex >= 0) {
-        const newReports = [...prev];
-        newReports[existingIndex] = { ...report, isSaved: true };
-        return newReports;
+  const saveMonthlyReport = useCallback(async (report: MonthlyReport) => {
+    try {
+      const res = await monthlyReportAPI.save(report);
+      if (res.success && res.id) {
+        const savedReport = { ...report, id: res.id, isSaved: true };
+        setMonthlyReports((prev) => {
+          const existingIndex = prev.findIndex(r => r.id === report.id || r.id === res.id);
+          if (existingIndex >= 0) {
+            const newReports = [...prev];
+            newReports[existingIndex] = savedReport;
+            return newReports;
+          }
+          return [savedReport, ...prev];
+        });
       }
-      return [{ ...report, isSaved: true }, ...prev];
-    });
+    } catch (error) {
+      console.error("Failed to save monthly report", error);
+    }
   }, []);
 
-  const deleteMonthlyReport = useCallback((reportId: string) => {
-    setMonthlyReports((prev) => prev.filter((r) => r.id !== reportId));
+  const deleteMonthlyReport = useCallback(async (reportId: string) => {
+    try {
+      if (!reportId.startsWith('rep-') && !reportId.startsWith('mr-')) {
+        await monthlyReportAPI.delete(reportId);
+      }
+      setMonthlyReports((prev) => prev.filter((r) => r.id !== reportId));
+    } catch (error) {
+      console.error("Failed to delete monthly report", error);
+    }
+  }, []);
+
+  const fetchMonthlyReports = useCallback(async (childId: string) => {
+    try {
+      const res = await monthlyReportAPI.getByChild(childId);
+      if (res.success && res.reports) {
+        // 백엔드 데이터를 프론트엔드 형식으로 매핑 (isSaved: true 추가)
+        const mappedReports: MonthlyReport[] = res.reports.map(r => ({
+          ...r,
+          isSaved: true
+        }));
+        setMonthlyReports(mappedReports);
+      }
+    } catch (error) {
+      console.error("Failed to fetch monthly reports", error);
+    }
+  }, []);
+
+  const sendMonthlyReportToParent = useCallback(async (report: MonthlyReport) => {
+    try {
+      // 알림장 시스템을 사용하여 전송
+      await noticeAPI.create({
+        type: 'individual',
+        childId: report.childId,
+        title: `${report.childName} 유아 ${report.reportMonth} 종합 평가서`,
+        content: `${report.childName} 유아의 ${report.reportMonth} 종합 평가서가 도착했습니다. 상세 내용은 관찰 메뉴에서 확인하실 수 있습니다.`,
+        date: formatDateISO(),
+        isRead: false
+      });
+      alert('부모님께 평가서 전송이 완료되었습니다.');
+    } catch (error) {
+      console.error("Failed to send report to parent", error);
+      alert('전송 중 오류가 발생했습니다.');
+    }
   }, []);
 
   const toggleScheduleComplete = useCallback(async (scheduleId: string) => {
@@ -545,10 +640,17 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
         updateSchedule,
         deleteSchedule,
         addObservation,
+        deleteObservation,
+        updateObservation,
         generateAIObservation,
         generateMonthlyReport,
         saveMonthlyReport,
         deleteMonthlyReport,
+        fetchMonthlyReports,
+        sendMonthlyReportToParent,
+        saveMonthlyReportLocal: (report: MonthlyReport) => {
+          setMonthlyReports(prev => [report, ...prev]);
+        },
         toggleScheduleComplete,
         markNoticeAsRead,
         updateChild,

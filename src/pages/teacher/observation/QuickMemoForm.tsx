@@ -8,12 +8,14 @@ interface QuickMemoFormProps {
   memo: string;
   setMemo: (val: string) => void;
   isGenerating: boolean;
+  isSaving?: boolean;
   selectedCategory: string;
   setSelectedCategory: (val: string) => void;
   onGenerateAI: () => void;
   aiDraft: ObservationLog | null;
   setAiDraft: (draft: ObservationLog | null) => void;
   onSave: () => void;
+  onSaveDirect: () => void;
 }
 
 export function QuickMemoForm({
@@ -21,12 +23,14 @@ export function QuickMemoForm({
   memo,
   setMemo,
   isGenerating,
+  isSaving = false,
   selectedCategory,
   setSelectedCategory,
   onGenerateAI,
   aiDraft,
   setAiDraft,
-  onSave
+  onSave,
+  onSaveDirect
 }: QuickMemoFormProps) {
   const [isSTTSupported, setIsSTTSupported] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -44,17 +48,14 @@ export function QuickMemoForm({
     stream: MediaStream;
   } | null>(null);
 
-  // 최신 메모 상태를 ref로 관리하여 STT 콜백 내에서 참조
   useEffect(() => {
     memoRef.current = memo;
   }, [memo]);
 
   useEffect(() => {
-    // 마이크 지원 여부 체크
     if (typeof navigator.mediaDevices?.getUserMedia === 'function') {
       setIsSTTSupported(true);
     }
-    
     return () => {
       cleanupSilenceDetector();
     };
@@ -73,19 +74,11 @@ export function QuickMemoForm({
   };
 
   const processSTT = async (audioBlob: Blob) => {
-    console.log('Sending audio blob of size:', audioBlob.size);
-    if (audioBlob.size === 0) {
-      console.warn('Audio blob size is 0. Nothing to send.');
-      return;
-    }
-    
+    if (audioBlob.size === 0) return;
     setIsProcessingSTT(true);
     try {
       const { observationAPI } = await import('../../../api/api');
       const data = await observationAPI.stt(audioBlob);
-
-      console.log('STT Success:', data.text);
-
       if (data.text) {
         const currentMemo = memoRef.current || '';
         const spacing = (currentMemo && !currentMemo.endsWith(' ') && !currentMemo.endsWith('\n')) ? ' ' : '';
@@ -101,8 +94,7 @@ export function QuickMemoForm({
   };
 
   const toggleListening = async () => {
-    setMicError(null); // 에러 초기화
-
+    setMicError(null);
     if (isListening) {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
         mediaRecorderRef.current.stop();
@@ -112,18 +104,16 @@ export function QuickMemoForm({
     }
 
     try {
-      setIsInitializingMic(true); // 마이크 권한 대기 중 상태
+      setIsInitializingMic(true);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      setIsInitializingMic(false); // 권한 허용됨
+      setIsInitializingMic(false);
 
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
       };
 
       mediaRecorder.onstop = () => {
@@ -133,7 +123,6 @@ export function QuickMemoForm({
         cleanupSilenceDetector();
       };
 
-      // 무음 감지 로직
       const audioContext = new window.AudioContext();
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
@@ -142,45 +131,39 @@ export function QuickMemoForm({
 
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
-      
       let silenceStart = Date.now();
 
       const intervalId = setInterval(() => {
         analyser.getByteFrequencyData(dataArray);
         const sum = dataArray.reduce((acc, val) => acc + val, 0);
         const average = sum / bufferLength;
-
         const THRESHOLD = 15; 
-        
         if (average > THRESHOLD) {
           silenceStart = Date.now();
         } else {
           if (Date.now() - silenceStart > 1500) { 
-            if (mediaRecorder.state === 'recording') {
-              mediaRecorder.stop();
-            }
+            if (mediaRecorder.state === 'recording') mediaRecorder.stop();
           }
         }
       }, 100);
 
       silenceDetectorRef.current = { audioContext, analyser, source, intervalId, silenceStart, stream };
-
       mediaRecorder.start();
       setIsListening(true);
     } catch (e: unknown) {
       console.error('Failed to start microphone', e);
       setIsInitializingMic(false);
       setIsListening(false);
-      
       const errorName = e instanceof Error ? e.name : '';
       if (errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError') {
-        setMicError('마이크 권한이 차단되었습니다. 브라우저 설정에서 권한을 허용해주세요.');
+        setMicError('마이크 권한이 차단되었습니다.');
       } else {
         setMicError('마이크를 사용할 수 없습니다.');
       }
-      setTimeout(() => setMicError(null), 4000); // 4초 후 에러 메시지 닫기
+      setTimeout(() => setMicError(null), 4000);
     }
   };
+
   const nuriDomains: NuriDomain[] = ['신체운동·건강', '의사소통', '사회관계', '예술경험', '자연탐구'];
 
   return (
@@ -196,9 +179,7 @@ export function QuickMemoForm({
           />
         </div>
         <div>
-          <h3 className="text-xl font-black text-slate-800">
-            {selectedChild.name} 관찰
-          </h3>
+          <h3 className="text-xl font-black text-slate-800">{selectedChild.name} 관찰</h3>
           <p className="text-slate-400 font-bold text-xs mt-1 whitespace-nowrap">오늘 있었던 특별한 행동을 남겨주세요.</p>
         </div>
       </div>
@@ -227,29 +208,20 @@ export function QuickMemoForm({
           <div className="flex items-center justify-between mb-3 ml-2">
             <div className="flex items-center gap-2">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider">관찰 텍스트 메모</label>
-              {micError && (
-                <span className="text-[10px] text-red-500 font-bold animate-pulse">{micError}</span>
-              )}
+              {micError && <span className="text-[10px] text-red-500 font-bold animate-pulse">{micError}</span>}
             </div>
             {isSTTSupported && (
               <button 
                 onClick={toggleListening}
                 disabled={isProcessingSTT || isInitializingMic}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all active:scale-95 ${
-                  isInitializingMic
-                    ? 'bg-amber-50 text-amber-500 shadow-sm border border-amber-100 opacity-80'
-                    : isListening 
-                      ? 'bg-red-50 text-red-500 shadow-sm animate-pulse border border-red-100' 
-                      : isProcessingSTT 
-                        ? 'bg-indigo-50 text-indigo-500 shadow-sm border border-indigo-100 opacity-70'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-transparent'
+                  isInitializingMic ? 'bg-amber-50 text-amber-500 border border-amber-100' :
+                  isListening ? 'bg-red-50 text-red-500 animate-pulse border border-red-100' :
+                  isProcessingSTT ? 'bg-indigo-50 text-indigo-500 border border-indigo-100' :
+                  'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-transparent'
                 }`}
               >
-                {(isProcessingSTT || isInitializingMic) ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <Mic size={14} className={isListening ? "animate-bounce" : ""} />
-                )}
+                {(isProcessingSTT || isInitializingMic) ? <Loader2 size={14} className="animate-spin" /> : <Mic size={14} className={isListening ? "animate-bounce" : ""} />}
                 {isInitializingMic ? '권한 요청 중...' : isProcessingSTT ? '텍스트 변환 중...' : isListening ? '듣고 있어요...' : '음성 입력'}
               </button>
             )}
@@ -264,53 +236,61 @@ export function QuickMemoForm({
       </div>
 
       {!aiDraft || isGenerating ? (
-        <button
-          className="w-full py-5 text-lg bg-slate-900 hover:bg-slate-800 text-white font-black rounded-2xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-50"
-          onClick={onGenerateAI}
-          disabled={isGenerating || !memo.trim() || !selectedCategory}
-        >
-          {isGenerating ? (
-            <><Loader2 size={24} className="animate-spin" /> AI 분석 중...</>
-          ) : (
-            <><Sparkles size={24} className="text-amber-400" /> 초안 완성하기</>
-          )}
-        </button>
+        <div className="flex gap-3">
+          <button
+            className="flex-[2] py-5 text-lg bg-slate-900 hover:bg-slate-800 text-white font-black rounded-2xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-50"
+            onClick={onGenerateAI}
+            disabled={isGenerating || isSaving || !memo.trim() || !selectedCategory}
+          >
+            {isGenerating ? <><Loader2 size={24} className="animate-spin" /> AI 분석 중...</> : <><Sparkles size={24} className="text-amber-400" /> 초안 완성하기</>}
+          </button>
+          <button
+            className="flex-1 py-5 text-lg bg-white border-2 border-slate-900 text-slate-900 font-black rounded-2xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-50"
+            onClick={onSaveDirect}
+            disabled={isGenerating || isSaving || !memo.trim() || !selectedCategory}
+          >
+            {isSaving ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} />}
+            저장
+          </button>
+        </div>
       ) : (
         <div className="bg-indigo-50/50 border border-indigo-100 rounded-3xl p-6 animate-fade-in-up mt-6">
           <div className="flex items-center justify-between mb-4 border-b border-indigo-100 pb-3">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-black text-indigo-700 bg-white border border-indigo-200 px-3 py-1 rounded-full uppercase">AI 초안</span>
-              <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full">{aiDraft.categories[0].name}</span>
+              <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full">{aiDraft.categories[0]?.name}</span>
             </div>
-            <button className="text-[10px] font-bold text-slate-400 underline" onClick={() => setAiDraft(null)}>취소</button>
+            <button className="text-[10px] font-bold text-slate-400 underline" onClick={() => setAiDraft(null)} disabled={isSaving}>취소</button>
           </div>
 
           <div className="space-y-4 mb-6">
             <div className="flex flex-col">
               <label className="text-[10px] font-black text-slate-400 mb-2 ml-1 uppercase tracking-tight">🔎 관찰 내용</label>
               <textarea
-                className="w-full bg-white border border-indigo-100 rounded-2xl p-4 text-sm font-medium text-slate-800 outline-none focus:border-indigo-400 resize-none shadow-sm leading-relaxed"
-                style={{ minHeight: '120px' }}
+                className="w-full bg-white border border-indigo-100 rounded-2xl p-4 text-sm font-medium text-slate-800 outline-none focus:border-indigo-400 resize-none shadow-sm leading-relaxed min-h-[120px]"
                 value={aiDraft.content}
                 onChange={(e) => setAiDraft({ ...aiDraft, content: e.target.value })}
+                disabled={isSaving}
               />
             </div>
             <div className="flex flex-col">
               <label className="text-[10px] font-black text-indigo-400 mb-2 ml-1 uppercase tracking-tight">💡 관찰 평가</label>
               <textarea
-                className="w-full bg-white/50 border border-indigo-100 rounded-2xl p-4 text-sm font-medium text-indigo-900 outline-none focus:border-indigo-400 resize-none shadow-sm leading-relaxed"
-                style={{ minHeight: '120px' }}
+                className="w-full bg-white/50 border border-indigo-100 rounded-2xl p-4 text-sm font-medium text-indigo-900 outline-none focus:border-indigo-400 resize-none shadow-sm leading-relaxed min-h-[120px]"
                 value={aiDraft.evaluation}
                 onChange={(e) => setAiDraft({ ...aiDraft, evaluation: e.target.value })}
+                disabled={isSaving}
               />
             </div>
           </div>
 
           <button
-            className="w-full py-5 text-lg bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-lg shadow-indigo-200/50"
+            className="w-full py-5 text-lg bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-lg"
             onClick={onSave}
+            disabled={isSaving}
           >
-            <Save size={24} /> 저장하기
+            {isSaving ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} />}
+            저장하기
           </button>
         </div>
       )}

@@ -151,6 +151,8 @@ export interface MonthlyReport {
   reportMonth: string;
   details: Record<string, DomainDetail>;
   isSaved: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // ── 식단 ──
