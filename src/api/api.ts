@@ -55,6 +55,7 @@ export const authAPI = {
       body: JSON.stringify(data),
     }),
   refresh: () => request('/auth/refresh', { method: 'POST' }),
+  getTeachers: () => request<{ success: boolean; teachers: { uid: string; name: string; className: string }[] }>('/auth/teachers'),
 };
 
 // ── Students API ──
