@@ -1,3 +1,6 @@
+import { Sparkles, Loader2, Save } from 'lucide-react';
+import type { Child, ObservationLog } from '../../../types';
+import { ChildAvatar } from '../../../components/common/ChildAvatar';
 import { Sparkles, Loader2, Save, Mic } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import type { Child, ObservationLog, NuriDomain } from '../../../types';
@@ -185,8 +188,14 @@ export function QuickMemoForm({
   return (
     <div className="bg-white border border-slate-200 rounded-[2rem] p-6 md:p-8 shadow-sm">
       <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
-        <div className="w-14 h-14 bg-indigo-50 rounded-full flex items-center justify-center text-3xl shadow-inner shrink-0">
-          {selectedChild.profileEmoji}
+        <div className="w-14 h-14 bg-indigo-50 rounded-full flex items-center justify-center shadow-inner shrink-0">
+          <ChildAvatar 
+            name={selectedChild.name}
+            profileImageUrl={selectedChild.profileImageUrl}
+            profileEmoji={selectedChild.profileEmoji}
+            className="w-full h-full rounded-full"
+            emojiClassName="text-3xl"
+          />
         </div>
         <div>
           <h3 className="text-xl font-black text-slate-800">
