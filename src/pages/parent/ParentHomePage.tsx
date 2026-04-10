@@ -1,6 +1,6 @@
 import { useAuth, useAppData } from '../../hooks';
-import { formatDateKorean, formatDateISO } from '../../utils/date';
-import { Heart, BookOpen, MessageCircle, TrendingUp } from 'lucide-react';
+import { formatDateKorean, formatDateISO, formatTimeKorean } from '../../utils/date';
+import { Heart, BookOpen, MessageCircle, TrendingUp, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PATH } from '../../router/Path';
 import { API_BASE } from '../../api/api';
@@ -18,14 +18,14 @@ export default function ParentHomePage() {
   const { user } = useAuth();
   const { children, observations, notices, schedules } = useAppData();
   const [viewerImages, setViewerImages] = useState<string[]>([]);
-  const [viewerIndex, setViewerIndex] = useState(0);
 
   const myChild = children[0];
 
   if (!myChild) {
     return (
       <div className="p-6 pb-28 animate-fade-in flex flex-col items-center justify-center min-h-[50vh]">
-        <p className="text-sm font-bold text-slate-400">자녀 정보를 불러오는 중이거나 등록된 자녀가 없습니다.</p>
+        <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-3xl mb-4">🐣</div>
+        <p className="text-sm font-bold text-slate-400">자녀 정보를 불러오는 중입니다...</p>
       </div>
     );
   }
@@ -46,19 +46,39 @@ export default function ParentHomePage() {
     .filter((s) => s.date === today)
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
+  const now = new Date();
+  const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  
+  // Find the next upcoming schedule
+  const nextUp = todaySchedules.find(s => s.startTime > currentTime);
+
   return (
-    <div className="p-6 pb-28 animate-fade-in">
-      <div className="mb-6">
-        <p className="text-xs font-bold text-pink-500 mb-1">{formatDateKorean()}</p>
-        <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-          {user?.name}님, 안녕하세요 <Heart size={24} className="text-pink-500 fill-pink-500" />
-        </h2>
+    <div className="min-h-screen p-6 pb-32 animate-fade-in relative z-10">
+      {/* Header Area */}
+      <div className="flex justify-between items-start mb-8 pt-2">
+        <div>
+          <p className="text-[13px] font-bold text-amber-500 mb-1">{formatDateKorean()}</p>
+          <h2 className="text-2xl font-black text-slate-900 leading-tight">
+            안녕하세요, <br/>
+            {user?.name}님! <span className="inline-block">👋</span>
+          </h2>
+        </div>
+        <div className="w-12 h-12 bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-white/50 flex items-center justify-center text-xl">
+          🎁
+        </div>
       </div>
 
-      {/* Child Card */}
-      <div className="bg-pink-50 p-6 rounded-[2.5rem] mb-8 border border-pink-100 shadow-sm">
-        <div className="flex items-center gap-5 mb-6">
-          <div className="w-20 h-20 bg-white rounded-[2rem] flex items-center justify-center text-[40px] shadow-inner overflow-hidden border-2 border-pink-100">
+      {/* Main Child Card */}
+      <div 
+        onClick={() => navigate(PATH.PARENT.EDIT_CHILD)}
+        className="bg-gradient-to-br from-amber-400 via-orange-400 to-orange-500 p-6 rounded-[2.5rem] mb-8 shadow-xl shadow-orange-200/40 relative overflow-hidden active:scale-[0.98] transition-all cursor-pointer"
+      >
+        {/* Decorative elements */}
+        <div className="absolute -right-4 -top-4 w-32 h-32 bg-white/20 rounded-full blur-2xl"></div>
+        <div className="absolute -left-4 -bottom-4 w-40 h-40 bg-orange-300/30 rounded-full blur-3xl"></div>
+        
+        <div className="flex items-center gap-5 mb-6 relative z-10">
+          <div className="w-24 h-24 bg-white rounded-[2.2rem] flex items-center justify-center text-[48px] shadow-2xl overflow-hidden border-4 border-white transition-transform hover:rotate-2 duration-500">
             {myChild.profileImageUrl ? (
               <img src={getFullImageUrl(myChild.profileImageUrl)} alt={myChild.name} className="w-full h-full object-cover" />
             ) : (
@@ -66,116 +86,145 @@ export default function ParentHomePage() {
             )}
           </div>
           <div>
-            <h3 className="text-lg font-black text-slate-800">{myChild.name}</h3>
-            <p className="text-xs text-pink-500 font-semibold">{myChild.className}</p>
+            <div className="px-3 py-1 bg-black/10 backdrop-blur-md rounded-full inline-block mb-1 border border-white/20">
+              <p className="text-[11px] text-white font-extrabold">{myChild.className || '우리 반'}</p>
+            </div>
+            <h3 className="text-2xl font-black text-white drop-shadow-sm">{myChild.name}</h3>
           </div>
         </div>
-        <button 
-          onClick={() => navigate(PATH.PARENT.EDIT_CHILD)}
-          className="w-full py-2.5 bg-white/60 hover:bg-white text-pink-600 rounded-xl text-xs font-bold transition-all border border-pink-200/50 shadow-sm"
+        
+        <div className="w-full py-4 bg-white/95 text-orange-600 rounded-2xl text-[14px] font-black shadow-lg flex items-center justify-center gap-2">
+          아이 정보 확인하기 <TrendingUp size={16} />
+        </div>
+      </div>
+
+      {/* Stats Summary Grid */}
+      <div className="flex flex-col gap-4 mb-10">
+        <div 
+          onClick={() => navigate(PATH.PARENT.OBSERVATION)}
+          className="p-6 bg-white/70 backdrop-blur-lg rounded-[2.2rem] shadow-sm border border-white/60 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all hover:shadow-md"
         >
-          정보 수정하기
-        </button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
-        {[
-          { icon: BookOpen, label: '관찰일지', value: `${childObservations.length}건`, bg: 'bg-purple-50', color: 'text-purple-500' },
-          { icon: MessageCircle, label: '알림장', value: `${childNotices.length}건`, bg: 'bg-emerald-50', color: 'text-emerald-500' },
-        ].map(({ icon: Icon, label, value, bg, color }, i) => (
-          <div key={i} className="p-4 bg-white border border-slate-200 rounded-2xl stagger-item" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-            <div className={`w-9 h-9 rounded-xl ${bg} ${color} flex items-center justify-center mb-2`}><Icon size={18} /></div>
-            <p className="text-[10px] text-slate-400 font-semibold">{label}</p>
-            <p className="text-base font-black text-slate-800">{value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Today's Schedule (Timeline) */}
-      <div className="mb-8 stagger-item">
-        <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2">
-          <TrendingUp size={16} /> 오늘의 일정
-        </h3>
-        <div className="relative ml-4 pl-6" style={{ borderLeft: '2px dashed #e2e8f0' }}>
-          {todaySchedules.length === 0 ? (
-            <div className="text-center py-6 opacity-30">
-              <p className="text-xs font-bold">오늘 예정된 일정이 없습니다.</p>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-inner">
+              <BookOpen size={24} />
             </div>
-          ) : (
-            todaySchedules.map((s) => (
-              <div key={s.id} className={`relative pb-5 last:pb-0 ${s.isCompleted ? 'opacity-40' : ''}`}>
-                <div
-                  className="absolute top-1 w-[10px] h-[10px] rounded-full"
-                  style={{ 
-                    left: '-29px', 
-                    border: '2px solid white', 
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                    background: s.isCompleted ? '#cbd5e1' : '#2563eb' 
-                  }}
-                />
-                <p className={`text-[10px] font-bold uppercase mb-[2px] ${s.isCompleted ? 'text-slate-400' : 'text-blue-600'}`}>
-                  {s.startTime}
-                </p>
-                <p className={`text-sm font-bold ${s.isCompleted ? 'line-through text-slate-400' : 'text-slate-800'}`}>
-                  {s.title}
-                </p>
-                {s.description && (
-                  <p className={`text-xs ${s.isCompleted ? 'text-slate-300' : 'text-slate-400'}`}>
-                    {s.description}
-                  </p>
+            <div>
+              <p className="text-[12px] text-slate-500 font-bold mb-0.5">우리 아이 성장 기록</p>
+              <p className="text-[20px] font-black text-slate-800">{childObservations.length}<span className="text-[14px] ml-1 opacity-50 font-bold">건의 기록</span></p>
+            </div>
+          </div>
+          <div className="text-slate-400">
+            <ChevronDown size={24} className="-rotate-90" strokeWidth={3} />
+          </div>
+        </div>
+
+        <div 
+          onClick={() => navigate(PATH.PARENT.NOTICES)}
+          className="p-6 bg-white/70 backdrop-blur-lg rounded-[2.2rem] shadow-sm border border-white/60 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all hover:shadow-md"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center shadow-inner">
+              <MessageCircle size={24} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <p className="text-[12px] text-slate-500 font-bold">알림장 확인하기</p>
+                {childNotices.some(n => !n.isRead) && (
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 bg-orange-500 text-white text-[9px] font-black rounded-md shadow-sm">NEW</span>
                 )}
               </div>
-            ))
-          )}
+              <p className="text-[20px] font-black text-slate-800">{childNotices.length}<span className="text-[14px] ml-1 opacity-50 font-bold">건의 알림</span></p>
+            </div>
+          </div>
+          <div className="text-slate-400">
+            <ChevronDown size={24} className="-rotate-90" strokeWidth={3} />
+          </div>
         </div>
       </div>
 
-      {childNotices.length > 0 && (
-        <div className="mb-6 stagger-item">
-          <h3 className="text-sm font-extrabold text-slate-800 mb-4">최근 알림장</h3>
-          <div className="p-4 bg-white border border-slate-200 rounded-2xl">
-            <p className="text-[10px] text-slate-400 mb-2">{childNotices[0].date}</p>
-            <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">{childNotices[0].content}</p>
-            {((childNotices[0].photoUrls && childNotices[0].photoUrls.length > 0) || (childNotices[0].photoUrl && childNotices[0].photoUrl !== 'string')) && (
-              <div className="flex gap-2 overflow-x-auto mt-3 pb-2 scrollbar-hide">
-                {(childNotices[0].photoUrls && childNotices[0].photoUrls.length > 0 ? childNotices[0].photoUrls : [childNotices[0].photoUrl!]).map((photo, idx, arr) => (
-                  <div 
-                    key={idx}
-                    className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden border border-slate-100 cursor-zoom-in group"
-                    onClick={() => {
-                      setViewerImages(arr.map(p => getFullImageUrl(p)));
-                      setViewerIndex(idx);
-                    }}
-                  >
-                    <img 
-                      src={getFullImageUrl(photo)} 
-                      alt={`Attached ${idx}`} 
-                      className="w-full h-full object-cover transition-transform group-hover:scale-110" 
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).parentElement?.style.setProperty('display', 'none');
-                      }}
-                    />
-                  </div>
-                ))}
+      {/* Unified Timeline Section */}
+      <div className="space-y-8">
+        <section>
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-[17px] font-black text-slate-800 flex items-center gap-2">
+              <span className="p-1.5 bg-amber-100 text-amber-500 rounded-lg"><TrendingUp size={16} /></span> 오늘의 일정
+            </h3>
+          </div>
+          
+          <div className="bg-white/70 backdrop-blur-md p-6 rounded-[2.2rem] shadow-sm border border-white/60">
+            {todaySchedules.length === 0 ? (
+              <div className="text-center py-6 text-slate-400">
+                <p className="text-xs font-bold italic opacity-60">오늘은 정기 일정이 없어요 ☀️</p>
+              </div>
+            ) : (
+              <div className="space-y-6 relative ml-1 pt-1">
+                <div className="absolute left-[5px] top-6 bottom-4 w-[2px] bg-slate-100"></div>
+                {todaySchedules.map((s) => {
+                  const isNext = nextUp?.id === s.id;
+                  return (
+                    <div 
+                      key={s.id} 
+                      onClick={() => navigate(PATH.PARENT.SCHEDULE)}
+                      className={`relative pl-8 transition-all duration-500 cursor-pointer active:scale-[0.98] ${isNext ? 'scale-[1.02]' : ''}`}
+                    >
+                      <div className={`absolute left-0 top-1.5 w-[14px] h-[14px] rounded-full border-2 bg-white z-10 ${isNext ? 'border-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.3)] animate-pulse' : 'border-slate-300'}`}></div>
+                      
+                      <div className={`p-4 rounded-2xl transition-all ${isNext ? 'bg-amber-50 border border-amber-100/50 shadow-sm' : 'hover:bg-slate-50/50'}`}>
+                         <div className="flex items-center justify-between mb-1">
+                          <p className={`text-[11px] font-black ${isNext ? 'text-amber-500' : 'text-slate-400'}`}>{formatTimeKorean(s.startTime)}</p>
+                          {isNext && (
+                            <span className="bg-amber-400 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-tighter shadow-sm">다음 일정</span>
+                          )}
+                        </div>
+                        <p className={`text-[16px] font-black ${isNext ? 'text-slate-900' : 'text-slate-700'}`}>{s.title}</p>
+                        {s.description && <p className="text-[13px] text-slate-500 mt-1 font-medium">{s.description}</p>}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
-        </div>
-      )}
+        </section>
 
-      {childObservations.length > 0 && (
-        <div className="mb-6 stagger-item">
-          <h3 className="text-sm font-extrabold text-slate-800 mb-4">최근 관찰일지</h3>
-          <div className="p-4 bg-white border border-slate-200 rounded-2xl">
-            <p className="text-[10px] text-slate-400 mb-2">{childObservations[0].date}</p>
-            <p className="text-xs text-slate-600 leading-relaxed">{childObservations[0].content}</p>
-            <div className="flex gap-2 mt-3">
-              {childObservations[0].categories.map((cat, i) => (<span key={i} className="text-[10px] text-blue-600 font-bold">#{cat.name}</span>))}
+        {/* Latest Notice - Highlighted */}
+        {childNotices.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-[17px] font-black text-slate-800 flex items-center gap-2">
+                <span className="p-1.5 bg-orange-100 text-orange-600 rounded-lg"><Heart size={16} /></span> 최근 알림장
+              </h3>
             </div>
-          </div>
-        </div>
-      )}
+            <div 
+              className="bg-white p-6 rounded-[2rem] shadow-sm border border-amber-50/50 cursor-pointer active:scale-[0.99] transition-transform"
+              onClick={() => navigate(PATH.PARENT.NOTICES)}
+            >
+              <div className="flex justify-between items-start mb-3">
+                <p className="text-[11px] font-bold text-slate-400">{childNotices[0].date}</p>
+                {!childNotices[0].isRead && <span className="px-2 py-0.5 bg-amber-500 text-white text-[9px] font-black rounded-full uppercase">New</span>}
+              </div>
+              <p className="text-[14px] text-slate-700 leading-relaxed font-medium line-clamp-3 mb-4">
+                {childNotices[0].content}
+              </p>
+              
+              {((childNotices[0].photoUrls && childNotices[0].photoUrls.length > 0) || (childNotices[0].photoUrl && childNotices[0].photoUrl !== 'string')) && (
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                  {(childNotices[0].photoUrls && childNotices[0].photoUrls.length > 0 ? childNotices[0].photoUrls : [childNotices[0].photoUrl!]).slice(0, 3).map((photo, idx) => (
+                    <div key={idx} className="flex-shrink-0 w-20 h-20 rounded-[1.2rem] overflow-hidden border border-slate-50">
+                      <img src={getFullImageUrl(photo)} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                  {(childNotices[0].photoUrls?.length || 1) > 3 && (
+                    <div className="flex-shrink-0 w-20 h-20 rounded-[1.2rem] bg-slate-50 flex items-center justify-center text-slate-400 text-xs font-bold">
+                      +{(childNotices[0].photoUrls?.length || 1) - 3}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+      </div>
 
       {viewerImages.length > 0 && (
         <ImageViewer 
@@ -187,3 +236,4 @@ export default function ParentHomePage() {
     </div>
   );
 }
+
