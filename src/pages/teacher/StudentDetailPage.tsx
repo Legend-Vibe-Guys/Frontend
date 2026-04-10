@@ -220,7 +220,10 @@ export default function StudentDetailPage() {
             <div className={`grid gap-3 ${hasMedication ? 'grid-cols-2' : 'grid-cols-1'}`}>
               
               {/* 보유 알레르기 */}
-              <div className="bg-white border border-slate-100 rounded-3xl p-4 shadow-sm flex flex-col justify-center">
+              <div className="bg-white border border-rose-100 rounded-3xl p-4 shadow-sm flex flex-col justify-center relative overflow-hidden">
+                <div className="absolute top-0 right-0 px-2 py-0.5 bg-rose-500 text-white text-[8px] font-black rounded-bl-lg uppercase tracking-tighter">
+                  학부모 작성
+                </div>
                 <div className="flex items-center gap-1.5 mb-2">
                   <div className="w-5 h-5 bg-rose-100 rounded-lg flex items-center justify-center">
                     <AlertTriangle size={10} className="text-rose-500" />
@@ -242,16 +245,19 @@ export default function StudentDetailPage() {
 
               {/* 투약의뢰 (존재할 때만 표시) */}
               {hasMedication && (
-                <div className="border rounded-3xl p-4 shadow-sm bg-emerald-50 border-emerald-100 flex flex-col justify-center">
+                <div className="border rounded-3xl p-4 shadow-sm bg-orange-50 border-orange-100 flex flex-col justify-center relative overflow-hidden">
+                  <div className="absolute top-0 right-0 px-2 py-0.5 bg-orange-500 text-white text-[8px] font-black rounded-bl-lg uppercase tracking-tighter">
+                    학부모 작성
+                  </div>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-1.5">
-                      <div className="w-5 h-5 rounded-lg flex items-center justify-center bg-emerald-200">
-                        <Pill size={10} className="text-emerald-700" />
+                      <div className="w-5 h-5 rounded-lg flex items-center justify-center bg-orange-200">
+                        <Pill size={10} className="text-orange-700" />
                       </div>
-                      <span className="text-[11px] font-bold text-emerald-800">오늘 투약의뢰</span>
+                      <span className="text-[11px] font-bold text-orange-800">투약 의뢰 메모</span>
                     </div>
                   </div>
-                  <p className="text-[10px] font-bold text-emerald-800 leading-relaxed bg-emerald-100/50 p-1.5 rounded-lg">
+                  <p className="text-[10px] font-bold text-orange-900 leading-relaxed bg-white/50 p-2 rounded-xl border border-orange-100/50">
                     {medicationRequest}
                   </p>
                 </div>
