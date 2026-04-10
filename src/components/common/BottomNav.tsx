@@ -21,6 +21,8 @@ const TEACHER_TABS = [
 
 const PARENT_TABS = [
   { path: PATH.PARENT.ROOT, icon: Home, label: '홈', end: true },
+  { path: PATH.PARENT.SCHEDULE, icon: Calendar, label: '일정' },
+  { path: PATH.PARENT.OBSERVATION, icon: Camera, label: '성장 기록' },
   { path: PATH.PARENT.NOTICES, icon: FileText, label: '알림장' },
 ];
 
@@ -37,14 +39,18 @@ export default function BottomNav() {
           end={tab.end}
           className={({ isActive }) =>
             `flex flex-col items-center flex-1 py-2 transition-all relative no-underline ${
-              isActive ? 'text-blue-600' : 'text-slate-300'
+              isActive 
+                ? (user?.role === 'parent' ? 'text-orange-500' : 'text-blue-600') 
+                : 'text-slate-300'
             }`
           }
         >
           {({ isActive }) => (
             <>
               {isActive && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-blue-600 rounded-b-full" />
+                <span className={`absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[3px] rounded-b-full ${
+                  user?.role === 'parent' ? 'bg-orange-500' : 'bg-blue-600'
+                }`} />
               )}
               <tab.icon size={20} strokeWidth={isActive ? 2.2 : 1.8} className={`transition-transform ${isActive ? 'scale-110' : ''}`} />
               <span className={`text-[9px] mt-[3px] ${isActive ? 'font-extrabold' : 'font-medium'}`}>

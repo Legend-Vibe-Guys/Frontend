@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks';
 import { PATH } from '../../router/Path';
 import type { UserRole } from '../../types';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronDown } from 'lucide-react';
+import { authAPI } from '../../api/api';
 
 export default function SignupPage() {
   const { signup } = useAuth();
@@ -17,6 +18,22 @@ export default function SignupPage() {
   const [childName, setChildName] = useState('');
   const [childBirthDate, setChildBirthDate] = useState('');
   const [assignedTeacher, setAssignedTeacher] = useState('');
+  const [className, setClassName] = useState('');
+  const [teachers, setTeachers] = useState<{uid: string, name: string, className: string}[]>([]);
+
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        const res = await authAPI.getTeachers();
+        if (res.success) {
+          setTeachers(res.teachers);
+        }
+      } catch (err) {
+        console.error('Failed to fetch teachers', err);
+      }
+    };
+    fetchTeachers();
+  }, []);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const onlyNumber = e.target.value.replace(/[^0-9]/g, '');
@@ -37,6 +54,10 @@ export default function SignupPage() {
       setErrorMsg('이름과 전화번호를 입력해주세요.');
       return;
     }
+    if (role === 'teacher' && !className) {
+      setErrorMsg('반 이름을 입력해주세요.');
+      return;
+    }
     setErrorMsg('');
     setIsLoading(true);
     try {
@@ -44,7 +65,14 @@ export default function SignupPage() {
         name, 
         phone, 
         role, 
-        ...(role === 'parent' ? { childName, childBirthDate, assignedTeacher } : {}) 
+        className: role === 'teacher' ? className : '',
+        ...(role === 'parent' ? { 
+          studentInfo: {
+            kidsName: childName, 
+            birthDate: childBirthDate, 
+            teacherName: assignedTeacher 
+          }
+        } : {}) 
       });
       // 성공하면 role에 맞게 리다이렉트
       navigate(role === 'teacher' ? PATH.TEACHER.ROOT : PATH.PARENT.ROOT, { replace: true });
@@ -55,7 +83,7 @@ export default function SignupPage() {
     }
   };
 
-  const inputClass = "w-full p-4 bg-white border border-slate-200 rounded-[1.25rem] text-[16px] text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-[#5E5CE6] focus:ring-4 focus:ring-[#5E5CE6]/5 font-medium shadow-sm" as const;
+  const inputClass = "w-full p-4 bg-white border border-slate-200 rounded-[1.25rem] text-[16px] text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-[#5E5CE6] focus:ring-4 focus:ring-[#5E5CE6]/5 font-medium shadow-sm appearance-none" as const;
 
   return (
     <div className="flex-1 flex flex-col pt-4 pb-10 relative z-20">
@@ -100,6 +128,13 @@ export default function SignupPage() {
           <input className={inputClass} type="tel" placeholder="010-0000-0000" maxLength={13} value={phone} onChange={handlePhoneChange} />
         </div>
 
+        {role === 'teacher' && (
+          <div className="flex flex-col gap-2 animate-fade-in">
+            <label className="text-[14px] font-bold text-slate-700 ml-1">담당 반 이름</label>
+            <input className={inputClass} type="text" placeholder="예: 햇님반, 기린반" value={className} onChange={(e) => setClassName(e.target.value)} />
+          </div>
+        )}
+
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden ${role === 'parent' ? 'max-h-[600px] opacity-100 pointer-events-auto mt-2' : 'max-h-0 opacity-0 pointer-events-none mt-0'}`}>
           <div className="flex flex-col gap-6 pt-8 border-t border-slate-200 border-dashed">
             <div className="text-center mb-2">
@@ -116,9 +151,25 @@ export default function SignupPage() {
                 <label className="text-[14px] font-bold text-slate-700 ml-1">생년월일</label>
                 <input className={inputClass} type="date" value={childBirthDate} onChange={(e) => setChildBirthDate(e.target.value)} />
               </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-[14px] font-bold text-slate-700 ml-1">담당 선생님 성함</label>
-                <input className={inputClass} type="text" placeholder="선생님 성함을 입력하세요" value={assignedTeacher} onChange={(e) => setAssignedTeacher(e.target.value)} />
+              <div className="flex flex-col gap-2 relative">
+                <label className="text-[14px] font-bold text-slate-700 ml-1">담당 선생님 선택</label>
+                <div className="relative">
+                  <select 
+                    className={inputClass} 
+                    value={assignedTeacher} 
+                    onChange={(e) => setAssignedTeacher(e.target.value)}
+                  >
+                    <option value="">선생님을 선택하세요</option>
+                    {teachers.map(t => (
+                      <option key={t.uid} value={t.name}>
+                        {t.name} 선생님 {t.className ? `(${t.className})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <ChevronDown size={20} />
+                  </div>
+                </div>
               </div>
             </div>
           </div>

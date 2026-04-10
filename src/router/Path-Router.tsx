@@ -14,6 +14,8 @@ import ObservationPage from '../pages/teacher/ObservationPage';
 // 학부모용 페이지
 import ParentHomePage from '../pages/parent/ParentHomePage';
 import ParentNoticePage from '../pages/parent/ParentNoticePage';
+import ParentObservationPage from '../pages/parent/ParentObservationPage';
+import ParentSchedulePage from '../pages/parent/ParentSchedulePage';
 import ChildEditPage from '../pages/parent/ChildEditPage';
 
 // 공통 페이지 (로그인)
@@ -60,6 +62,8 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <ParentHomePage /> },
       { path: 'notices', element: <ParentNoticePage /> },
+      { path: 'observation', element: <ParentObservationPage /> },
+      { path: 'schedule', element: <ParentSchedulePage /> },
       { path: 'child/edit', element: <ChildEditPage /> },
     ],
   },
