@@ -10,6 +10,8 @@ interface MonthlyReportViewProps {
   onGenerateReport: (childId: string, month: string) => Promise<MonthlyReport>;
 }
 
+const nuriDomains: NuriDomain[] = ['신체운동·건강', '의사소통', '사회관계', '예술경험', '자연탐구'];
+
 export function MonthlyReportView({ children, observations, onGenerateReport }: MonthlyReportViewProps) {
   const { monthlyReports, saveMonthlyReport, deleteMonthlyReport } = useAppData();
   const currentMonth = new Date().toISOString().slice(0, 7);
@@ -19,8 +21,6 @@ export function MonthlyReportView({ children, observations, onGenerateReport }: 
   const [isSaving, setIsSaving] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [report, setReport] = useState<MonthlyReport | null>(null);
-
-  const nuriDomains: NuriDomain[] = ['신체운동·건강', '의사소통', '사회관계', '예술경험', '자연탐구'];
 
   const childOptions = useMemo(() => [
     { value: '', label: '아동 선택' },
@@ -46,7 +46,7 @@ export function MonthlyReportView({ children, observations, onGenerateReport }: 
       });
     });
     return counts;
-  }, [childObservations, nuriDomains]);
+  }, [childObservations]);
 
   const getDomainDisplayName = (name: string) => {
     if (name === '신체운동·건강') return '신체';
