@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAppData } from '../../hooks';
-import { Bell, ChevronDown, ChevronUp, Megaphone, ClipboardList, Camera } from 'lucide-react';
+import { Bell, ChevronDown, Megaphone, ClipboardList, Camera } from 'lucide-react';
 import { API_BASE } from '../../api/api';
 import ImageViewer from '../../components/common/ImageViewer';
 
@@ -17,72 +17,92 @@ export default function ParentNoticePage() {
   const [viewerImages, setViewerImages] = useState<string[]>([]);
   const [viewerIndex, setViewerIndex] = useState(0);
 
+
   const commonNotices = notices.filter((n) => n.type === 'common');
   const childIds = children.map(c => c.id);
   const individualNotices = notices.filter((n) => n.type === 'individual' && childIds.includes(n.childId || ''));
   
   const currentList = [...(tab === 'common' ? commonNotices : individualNotices)].sort((a, b) => {
-    // 1. 생성일시 역순 (최신순) - 정확한 시간 기준
-    if (a.createdAt && b.createdAt) {
-      return b.createdAt.localeCompare(a.createdAt);
-    }
-    // 2. 생성일시가 없으면 날짜 역순
-    if (a.date !== b.date) {
-      return b.date.localeCompare(a.date);
-    }
-    // 3. 마지막 수단으로 ID 역순
+    if (a.createdAt && b.createdAt) return b.createdAt.localeCompare(a.createdAt);
+    if (a.date !== b.date) return b.date.localeCompare(a.date);
     return b.id.localeCompare(a.id);
   });
 
   return (
-    <div className="p-6 pb-28 animate-fade-in">
-      <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-2">
-        알림장 <ClipboardList size={22} className="text-blue-600" />
-      </h2>
+    <div className="min-h-screen p-6 pb-32 animate-fade-in relative z-10">
+      {/* Header */}
+      <div className="mb-8 pt-4">
+        <h2 className="text-3xl font-black text-slate-900 mb-2 flex items-center gap-3">
+          알림장 <span className="text-2xl">📋</span>
+        </h2>
+        <p className="text-[14px] text-slate-500 font-medium">우리 아이의 소중한 기록들을 확인하세요.</p>
+      </div>
 
-      <div className="flex gap-2 mb-6 bg-slate-50 p-1 rounded-2xl">
-        <button className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-semibold transition-all ${tab === 'common' ? 'bg-white text-blue-600 font-bold shadow-sm' : 'text-slate-400'}`} onClick={() => setTab('common')}>
-          <Megaphone size={14} /> 공통 알림장
+      {/* Modern Tabs - Glassmorphism */}
+      <div className="flex gap-2 mb-8 bg-white/40 backdrop-blur-md p-1.5 rounded-[1.8rem] border border-white/50 shadow-sm">
+        <button 
+          className={`flex-1 flex gap-2 items-center justify-center py-4 rounded-[1.5rem] text-[13px] font-black transition-all duration-300 ${tab === 'common' ? 'bg-white text-orange-600 shadow-md ring-1 ring-orange-50' : 'text-slate-400'}`} 
+          onClick={() => setTab('common')}
+        >
+          <Megaphone size={16} /> 우리 반 소식
         </button>
-        <button className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-semibold transition-all ${tab === 'individual' ? 'bg-white text-blue-600 font-bold shadow-sm' : 'text-slate-400'}`} onClick={() => setTab('individual')}>
-          <Bell size={14} /> 개별 알림장
+        <button 
+          className={`flex-1 flex gap-2 items-center justify-center py-4 rounded-[1.5rem] text-[13px] font-black transition-all duration-300 ${tab === 'individual' ? 'bg-white text-amber-600 shadow-md ring-1 ring-amber-50' : 'text-slate-400'}`} 
+          onClick={() => setTab('individual')}
+        >
+          <Bell size={16} /> 개별 알림장
         </button>
       </div>
 
-      <div className="flex flex-col gap-3">
+      {/* Content List */}
+      <div className="space-y-4">
         {currentList.length === 0 ? (
-          <p className="text-center text-slate-400 text-xs py-8">아직 알림장이 없습니다</p>
+          <div className="flex flex-col items-center justify-center py-20 opacity-40">
+            <ClipboardList size={48} className="mb-4 text-slate-400" />
+            <p className="text-sm font-bold text-slate-500">아직 도착한 알림장이 없어요.</p>
+          </div>
         ) : (
           currentList.map((notice) => (
-            <div key={notice.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden stagger-item">
-              <div className="flex items-center justify-between p-4 cursor-pointer" onClick={() => {
-                if (expandedId !== notice.id) {
-                  setExpandedId(notice.id);
-                  if (!notice.isRead) {
-                    markNoticeAsRead(notice.id);
+            <div 
+              key={notice.id} 
+              className={`bg-white/70 backdrop-blur-lg rounded-[2.2rem] overflow-hidden transition-all duration-300 border ${expandedId === notice.id ? 'border-orange-200 shadow-lg' : 'border-white/60 shadow-sm'}`}
+            >
+              <div 
+                className="p-5 cursor-pointer flex items-start justify-between gap-4" 
+                onClick={() => {
+                  if (expandedId !== notice.id) {
+                    setExpandedId(notice.id);
+                    if (!notice.isRead) markNoticeAsRead(notice.id);
+                  } else {
+                    setExpandedId(null);
                   }
-                } else {
-                  setExpandedId(null);
-                }
-              }}>
+                }}
+              >
                 <div className="flex-1">
-                  <p className="text-[10px] text-slate-400 mb-[2px]">{notice.date}</p>
-                  <p className="font-bold text-sm text-slate-800 line-clamp-1">{notice.title}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px] font-black text-orange-600 px-2 py-0.5 bg-orange-100 rounded-full">{notice.date}</span>
+                    {!notice.isRead && <span className="w-2 h-2 bg-orange-500 rounded-full shadow-sm" />}
+                  </div>
+                  <h4 className={`text-[17px] font-black text-slate-800 leading-tight ${expandedId === notice.id ? '' : 'line-clamp-1'}`}>
+                    {notice.title}
+                  </h4>
                 </div>
-                <div className="flex items-center gap-3 text-slate-400 ml-2">
-                  {notice.photoUrl && <Camera size={14} className="text-blue-400" />}
-                  {!notice.isRead && <span className="w-2 h-2 bg-blue-600 rounded-full" />}
-                  {expandedId === notice.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                <div className="flex items-center gap-2 pt-1 text-slate-400">
+                  {notice.photoUrl && <Camera size={16} />}
+                  <div className={`transition-transform duration-300 ${expandedId === notice.id ? 'rotate-180 text-orange-600' : ''}`}>
+                    <ChevronDown size={20} strokeWidth={3} />
+                  </div>
                 </div>
               </div>
+
               {expandedId === notice.id && (
-                <div className="px-4 pb-4 animate-fade-in space-y-3">
+                <div className="px-5 pb-6 animate-slide-down">
                   {((notice.photoUrls && notice.photoUrls.length > 0) || (notice.photoUrl && notice.photoUrl !== 'string')) && (
-                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                    <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
                       {(notice.photoUrls && notice.photoUrls.length > 0 ? notice.photoUrls : [notice.photoUrl!]).map((photo, idx, arr) => (
                         <div 
                           key={idx}
-                          className="flex-shrink-0 w-32 h-32 rounded-xl overflow-hidden border border-slate-100 shadow-sm cursor-zoom-in group"
+                          className="flex-shrink-0 w-36 h-36 rounded-[1.8rem] overflow-hidden border border-white/40 shadow-md cursor-zoom-in group"
                           onClick={() => {
                             setViewerImages(arr.map(p => getFullImageUrl(p)));
                             setViewerIndex(idx);
@@ -91,13 +111,17 @@ export default function ParentNoticePage() {
                           <img 
                             src={getFullImageUrl(photo)} 
                             alt={`Notice ${idx}`} 
-                            className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           />
                         </div>
                       ))}
                     </div>
                   )}
-                  <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line bg-slate-50 p-4 rounded-xl">{notice.content}</p>
+                  <div className="p-4 bg-white/50 rounded-[1.8rem] border border-white/60">
+                    <p className="text-[14px] text-slate-700 leading-relaxed whitespace-pre-line font-medium italic">
+                      {notice.content}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

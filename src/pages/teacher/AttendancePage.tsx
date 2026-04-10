@@ -1,5 +1,6 @@
 import { useAppData } from '../../hooks';
 import { UserCheck, UserX, Clock } from 'lucide-react';
+import { ChildAvatar } from '../../components/common/ChildAvatar';
 
 export default function AttendancePage() {
   const { children, attendance, markAttendance, stats } = useAppData();
@@ -39,9 +40,13 @@ export default function AttendancePage() {
               style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
             >
               <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-[22px] ${isAbsent ? 'bg-red-50' : 'bg-blue-50'}`}>
-                  {child.profileEmoji}
-                </div>
+                <ChildAvatar 
+                  name={child.name}
+                  profileImageUrl={child.profileImageUrl}
+                  profileEmoji={child.profileEmoji}
+                  className={`w-12 h-12 rounded-2xl ${isAbsent ? 'bg-red-50' : 'bg-blue-50'}`}
+                  emojiClassName="text-[22px]"
+                />
                 <div>
                   <p className="font-black text-sm text-slate-800">{child.name}</p>
                   {isPresent && record?.arrivalTime && (

@@ -25,6 +25,7 @@ export interface SignupData {
   childName?: string;
   childBirthDate?: string;
   assignedTeacher?: string;
+  className?: string;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);

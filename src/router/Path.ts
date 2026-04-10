@@ -18,6 +18,8 @@ export const PATH = {
   PARENT: {
     ROOT: '/parent',
     NOTICES: '/parent/notices',
+    OBSERVATION: '/parent/observation',
+    SCHEDULE: '/parent/schedule',
     EDIT_CHILD: '/parent/child/edit',
   },
 } as const;
