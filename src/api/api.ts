@@ -1,5 +1,5 @@
 import { auth } from '../config/firebase';
-import type { ApiError, Notice, Child, ScheduleItem, ObservationRecord } from '../types';
+import type { ApiError, Notice, Child, ScheduleItem, ObservationRecord, MonthlyReport } from '../types';
 
 export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -168,6 +168,19 @@ export const observationAPI = {
     if (filters.date) params.append('date', filters.date);
     return request<{ success: boolean; observations: ObservationRecord[] }>(`/observations?${params.toString()}`);
   },
+  
+  // 관찰일지 삭제
+  delete: (id: string) =>
+    request<{ success: boolean; message: string }>(`/observations/${id}`, {
+      method: 'DELETE',
+    }),
+
+  // 관찰일지 수정
+  update: (id: string, data: Partial<ObservationRecord>) =>
+    request<{ success: boolean; message: string }>(`/observations/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
 };
 
 // ── Schedule API ──
@@ -204,5 +217,20 @@ export const uploadAPI = {
       headers: {}, // Browser sets boundary
     });
   },
+};
+
+// ── Monthly Report API ──
+export const monthlyReportAPI = {
+  save: (data: Record<string, unknown>) => 
+    request<{ success: boolean; id: string }>('/report/monthly', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  getByChild: (childId: string) => 
+    request<{ success: boolean; reports: MonthlyReport[] }>(`/report/monthly?childId=${childId}`),
+  delete: (id: string) => 
+    request<{ success: boolean; message: string }>(`/report/monthly/${id}`, {
+      method: 'DELETE'
+    })
 };
 
