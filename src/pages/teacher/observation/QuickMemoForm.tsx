@@ -50,7 +50,7 @@ export function QuickMemoForm({
 
   useEffect(() => {
     // 마이크 지원 여부 체크
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    if (typeof navigator.mediaDevices?.getUserMedia === 'function') {
       setIsSTTSupported(true);
     }
     
