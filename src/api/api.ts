@@ -136,6 +136,16 @@ export const noticeAPI = {
 
 // ── Observation API ──
 export const observationAPI = {
+  // STT 음성 변환 (Groq Whisper)
+  stt: (file: Blob) => {
+    const formData = new FormData();
+    formData.append('file', file, 'audio.webm');
+    return request<{ text: string }>('/observations/stt', {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
   // AI 관찰일지 초안 생성
   generateDraft: (data: { childName: string; memo: string; category: string }) =>
     request<{ observationContent: string; observationEvaluation: string }>('/observations/generate-draft', {

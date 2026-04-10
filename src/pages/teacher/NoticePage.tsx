@@ -20,6 +20,9 @@ import { StatusDashboard } from '../../components/teacher/StatusDashboard';
 import { ChildListGrid } from '../../components/teacher/ChildListGrid';
 import { PATH } from '../../router/Path';
 import ImageViewer from '../../components/common/ImageViewer';
+import AlertModal from '../../components/common/AlertModal';
+import ConfirmModal from '../../components/common/ConfirmModal';
+import Toast from '../../components/common/Toast';
 
 const getFullImageUrl = (url?: string) => {
   if (!url) return '';
@@ -38,6 +41,50 @@ export default function NoticePage() {
     deleteNotice,
   } = useAppData();
   const navigate = useNavigate();
+  const [alertModal, setAlertModal] = useState<{ isOpen: boolean; message: string; type: 'success' | 'error' | 'info' }>({
+    isOpen: false,
+    message: '',
+    type: 'info'
+  });
+
+  const [toast, setToast] = useState<{ isVisible: boolean; message: string; type: 'success' | 'error' }>({
+    isVisible: false,
+    message: '',
+    type: 'success'
+  });
+
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; message: string; subMessage?: string; targetId: string | null; onConfirm: (() => void) | null }>({
+    isOpen: false,
+    message: '',
+    targetId: null,
+    onConfirm: null
+  });
+
+  const showAlert = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setAlertModal({ isOpen: true, message, type });
+  };
+
+  const showToastMsg = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ isVisible: true, message, type });
+  };
+
+  const handleDeleteNotice = (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      message: '정말 삭제할까요?',
+      subMessage: '삭제하면 다시 복구할 수 없어요.',
+      targetId: id,
+      onConfirm: async () => {
+        try {
+          await deleteNotice(id);
+          showToastMsg('삭제되었어요.', 'success');
+        } catch {
+          showAlert('알림장 삭제에 실패했습니다.', 'error');
+        }
+      }
+    });
+  };
+
   const [viewerImages, setViewerImages] = useState<string[]>([]);
   const [viewerIndex, setViewerIndex] = useState(0);
 
@@ -155,7 +202,7 @@ export default function NoticePage() {
         }
       } catch (err) {
         console.error('Image upload failed', err);
-        alert('이미지 업로드에 실패했습니다. 다시 시도해주세요.');
+        showAlert('이미지 업로드에 실패했습니다. 다시 시도해주세요.', 'error');
         setIsCommonGenerating(false);
         return;
       }
@@ -177,9 +224,9 @@ export default function NoticePage() {
       setCommonContent('');
       setCommonPhotos([]);
       setCommonPhotoFiles([]);
-      alert('전체 공통 알림장이 전송되었습니다.');
+      showToastMsg('알림장이 전송되었어요!', 'success');
     } catch {
-      alert('알림장 전송에 실패했습니다.');
+      showAlert('알림장 전송에 실패했습니다.', 'error');
     } finally {
       setIsCommonGenerating(false);
     }
@@ -194,7 +241,7 @@ export default function NoticePage() {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'AI 초안 생성 중 오류가 발생했습니다.';
-      alert(errorMessage);
+      showAlert(errorMessage, 'error');
     } finally {
       setIsCommonGenerating(false);
     }
@@ -241,7 +288,7 @@ export default function NoticePage() {
         }
       } catch (err) {
         console.error('Individual image upload failed', err);
-        alert('이미지 업로드에 실패했습니다.');
+        showAlert('이미지 업로드에 실패했습니다.', 'error');
         setIsGenerating(false);
         return;
       }
@@ -254,7 +301,7 @@ export default function NoticePage() {
         photoUrls,
         photoUrl: photoUrls[0] || '',
       } as Notice);
-      alert('개별 알림장이 해당 학부모님께 전송되었습니다.');
+      showToastMsg('알림장이 전송되었어요!', 'success');
       setIndividualPhotos([]);
       setIndividualPhotoFiles([]);
       setSelectedChildId(null);
@@ -269,7 +316,7 @@ export default function NoticePage() {
         return newMemos;
       });
     } catch {
-      alert('알림장 전송에 실패했습니다.');
+      showAlert('알림장 전송에 실패했습니다.', 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -292,7 +339,7 @@ export default function NoticePage() {
         }
       } catch (err) {
         console.error('Manual individual image upload failed', err);
-        alert('이미지 업로드에 실패했습니다.');
+        showAlert('이미지 업로드에 실패했습니다.', 'error');
         setIsGenerating(false);
         return;
       }
@@ -314,7 +361,7 @@ export default function NoticePage() {
 
     try {
       await addNotice(newNotice as Notice);
-      alert('개별 알림장이 전송되었습니다.');
+      showToastMsg('알림장이 전송되었어요!', 'success');
       setIndividualPhotos([]);
       setIndividualPhotoFiles([]);
       setSelectedChildId(null);
@@ -324,7 +371,7 @@ export default function NoticePage() {
         return newMemos;
       });
     } catch {
-      alert('알림장 전송에 실패했습니다.');
+      showAlert('알림장 전송에 실패했습니다.', 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -469,11 +516,7 @@ export default function NoticePage() {
                         <Edit3 size={14} />
                       </button>
                       <button
-                        onClick={async () => {
-                          if (window.confirm('정말 삭제하시겠습니까?')) {
-                            await deleteNotice(n.id);
-                          }
-                        }}
+                        onClick={() => handleDeleteNotice(n.id)}
                         className="p-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors"
                         title="삭제"
                       >
@@ -800,11 +843,7 @@ export default function NoticePage() {
                               <Edit3 size={14} />
                             </button>
                             <button
-                              onClick={async () => {
-                                if (window.confirm('정말 삭제하시겠습니까?')) {
-                                  await deleteNotice(n.id);
-                                }
-                              }}
+                              onClick={() => handleDeleteNotice(n.id)}
                               className="p-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors"
                               title="삭제"
                             >
@@ -847,6 +886,27 @@ export default function NoticePage() {
           onClose={() => setViewerImages([])}
         />
       )}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        message={alertModal.message}
+        type={alertModal.type}
+        onClose={() => setAlertModal((prev) => ({ ...prev, isOpen: false }))}
+      />
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        message={confirmModal.message}
+        subMessage={confirmModal.subMessage}
+        onConfirm={() => {
+          if (confirmModal.onConfirm) confirmModal.onConfirm();
+        }}
+        onCancel={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
+      <Toast 
+        isVisible={toast.isVisible}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast((prev) => ({ ...prev, isVisible: false }))}
+      />
     </div>
   );
 }

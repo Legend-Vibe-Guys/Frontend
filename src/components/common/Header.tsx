@@ -20,12 +20,16 @@ export default function Header() {
       <header className="h-14 flex items-center justify-between px-5 border-b border-slate-100 sticky top-0 z-50 bg-white/[0.92] backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <div
-            className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-lg"
-            style={{ boxShadow: '0 4px 12px rgba(37,99,235,0.25)' }}
+            className="w-8 h-8 bg-gradient-to-br from-[#4D61FF] via-[#7B5CFF] to-[#BD00FF] rounded-xl flex items-center justify-center"
+            style={{ boxShadow: '0 4px 12px rgba(123,92,255,0.35)' }}
           >
-            🌱
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 9.536V7a4 4 0 0 1 4-4h1.5a.5.5 0 0 1 .5.5V5a4 4 0 0 1-4 4 4 4 0 0 0-4 4c0 2 1 3 1 5a5 5 0 0 1-1 3"/>
+              <path d="M4 9a5 5 0 0 1 8 4 5 5 0 0 1-8-4"/>
+              <path d="M5 21h14"/>
+            </svg>
           </div>
-          <h1 className="text-[17px] font-black text-slate-900 tracking-tight">아이케어 AI</h1>
+          <h1 className="text-[17px] font-black text-slate-900 tracking-tight">키즈노트</h1>
         </div>
         <div className="flex items-center gap-1">
           <button className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 transition-all relative">
