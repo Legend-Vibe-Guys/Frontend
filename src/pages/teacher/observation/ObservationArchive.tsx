@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Trash2, Edit2, Save, X, Loader2 } from 'lucide-
 import { CustomSelect } from '../../../components/teacher/CustomSelect';
 import { API_BASE } from '../../../api/api';
 import type { ObservationLog, Child, NuriDomain } from '../../../types';
+import { ChildAvatar } from '../../../components/common/ChildAvatar';
 
 interface ObservationArchiveProps {
   observations: ObservationLog[];
