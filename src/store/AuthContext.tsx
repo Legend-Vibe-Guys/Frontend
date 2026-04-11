@@ -16,6 +16,7 @@ interface AuthContextType extends AuthState {
   loginWithGoogle: () => Promise<{ needsSignup: boolean }>;
   signup: (data: SignupData) => Promise<void>;
   logout: () => void;
+  updateProfile: (data: { className?: string }) => Promise<void>;
 }
 
 export interface SignupData {
@@ -25,6 +26,7 @@ export interface SignupData {
   childName?: string;
   childBirthDate?: string;
   assignedTeacher?: string;
+  teacherUid?: string;
   className?: string;
 }
 
@@ -95,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           kidsName: data.childName,
           birthDate: data.childBirthDate,
           teacherName: data.assignedTeacher,
+          teacherUid: data.teacherUid,
         };
       }
 
@@ -127,6 +130,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ user: null, isAuthenticated: false, isLoading: false, isInitialized: true });
   }, []);
 
+  const updateProfile = useCallback(async (data: { className?: string }) => {
+    try {
+      const res = await authAPI.updateProfile(data);
+      if (res.success) {
+        setState((s) => ({
+          ...s,
+          user: s.user ? { ...s.user, ...data } : null,
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      throw error;
+    }
+  }, []);
+
   if (!state.isInitialized) {
     return (
       <div className="w-full max-w-[430px] h-dvh mx-auto bg-white flex items-center justify-center">
@@ -136,7 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ ...state, loginWithGoogle, signup, logout }}>
+    <AuthContext.Provider value={{ ...state, loginWithGoogle, signup, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
