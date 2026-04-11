@@ -26,27 +26,30 @@ export default function ParentObservationPage() {
         <p className="text-[14px] text-slate-500 font-medium ml-1">우리 아이의 소중한 성장 순간들을 모았습니다.</p>
       </div>
 
-      {/* Summary Stats - Glassmorphism */}
-      <div className="bg-white/60 backdrop-blur-lg p-5 rounded-[2rem] border border-white/50 shadow-sm mb-8 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center shadow-inner">
-            <BookOpen size={24} />
-          </div>
-          <div>
-            <p className="text-[11px] text-slate-500 font-bold">전체 기록</p>
-            <p className="text-[18px] font-black text-slate-800">{childObservations.length}건</p>
-          </div>
+      {/* Summary Stats - Refined Minimalist Design */}
+      <div className="bg-white/60 backdrop-blur-lg p-5 rounded-[2.2rem] border border-white/50 shadow-sm mb-8 flex items-center gap-4 animate-fade-in">
+        {/* Left Side: Icon from Original Design */}
+        <div className="w-14 h-14 bg-orange-100 text-orange-600 rounded-[1.25rem] flex items-center justify-center shadow-inner shrink-0">
+          <BookOpen size={28} />
         </div>
-        <div className="h-10 w-[1px] bg-white/50"></div>
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center shadow-inner">
-            <Star size={24} />
-          </div>
-          <div>
-            <p className="text-[11px] text-slate-500 font-bold">최근 업데이트</p>
-            <p className="text-[18px] font-black text-slate-800">
-              {childObservations.length > 0 ? childObservations[0].date.split('-').slice(1).join('.') : '-'}
+        
+        {/* Right Side: Consolidated Info */}
+        <div className="flex-1">
+          {/* Recent Update: Small Gray Text at the Top */}
+          <div className="flex items-center gap-1.5 mb-1 opacity-60">
+            <div className="w-1 h-1 bg-slate-300 rounded-full" />
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+              최근 업데이트: {childObservations.length > 0 ? childObservations[0].date.replace(/-/g, '.') : '-'}
             </p>
+          </div>
+          
+          {/* Total Records: Main Content */}
+          <div className="flex items-baseline gap-2">
+            <h4 className="text-[17px] font-black text-slate-800 tracking-tight">전체 기록</h4>
+            <div className="flex items-baseline">
+              <span className="text-[24px] font-black text-orange-600 leading-none">{childObservations.length}</span>
+              <span className="text-[16px] font-black text-orange-600 ml-0.5">건</span>
+            </div>
           </div>
         </div>
       </div>
