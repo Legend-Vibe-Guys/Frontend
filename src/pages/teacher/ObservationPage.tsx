@@ -7,6 +7,7 @@ import { QuickMemoForm } from './observation/QuickMemoForm';
 import { ObservationArchive } from './observation/ObservationArchive';
 import { MonthlyReportView } from './observation/MonthlyReportView';
 import type { ObservationLog } from '../../types';
+import { formatDateISO } from '../../utils/date';
 
 type PageType = 'home' | 'quick_list' | 'quick_memo' | 'archive' | 'report';
 
@@ -73,7 +74,7 @@ export default function ObservationPage() {
         id: `obs-${Date.now()}`,
         childId: selectedChildId,
         childName: selectedChild.name,
-        date: new Date().toISOString().split('T')[0],
+        date: formatDateISO(),
         categories: [{ name: selectedCategory, analysis: "" }],
         content: quickMemo,
         evaluation: "(교사 직접 작성)",
