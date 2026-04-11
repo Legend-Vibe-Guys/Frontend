@@ -169,101 +169,95 @@ export default function StudentDetailPage() {
             </div>
 
             {/* 학생 특징 리스트 */}
-            <div className="flex flex-wrap gap-1.5 mt-2">
+            <div className="flex flex-wrap gap-2 mt-3">
               {traits.map(t => (
-                <span key={t} className="flex items-center gap-1 bg-white/20 text-white text-[10px] font-bold pl-2.5 pr-1 py-1 rounded-full backdrop-blur-sm border border-white/10 group cursor-default">
+                <span key={t} className="flex items-center gap-1.5 bg-white/20 text-white text-xs font-semibold pl-3 pr-1.5 py-1.5 rounded-full backdrop-blur-sm border border-white/15 hover:bg-white/30 transition-colors cursor-default">
                   {t}
-                  <button onClick={() => removeTrait(t)} className="w-4 h-4 rounded-full hover:bg-white/30 flex items-center justify-center transition-colors">
-                    <X size={10} />
+                  <button
+                    onClick={() => removeTrait(t)}
+                    className="w-4 h-4 rounded-full hover:bg-white/40 flex items-center justify-center transition-colors shrink-0"
+                  >
+                    <X size={11} strokeWidth={2.5} />
                   </button>
                 </span>
               ))}
 
               {isEditingTrait ? (
-                <div className="flex items-center gap-1 bg-white/30 rounded-full pl-2 pr-1 py-0.5 backdrop-blur-sm border border-white/30">
+                <div className="flex items-center gap-1.5 bg-white/25 rounded-full pl-3 pr-1.5 py-1.5 backdrop-blur-sm border border-white/30">
                   <input
                     type="text"
                     value={newTrait}
                     onChange={(e) => setNewTrait(e.target.value)}
                     onKeyDown={handleTraitKeyDown}
-                    placeholder="특징 추가 후 Enter"
-                    className="bg-transparent text-[10px] font-bold text-white placeholder:text-white/60 outline-none w-24"
+                    placeholder="특징 입력 후 Enter"
+                    className="bg-transparent text-xs font-semibold text-white placeholder:text-white/55 outline-none w-28"
                     autoFocus
                     onBlur={() => {
-                        if(!newTrait.trim()) setIsEditingTrait(false);
+                      if (!newTrait.trim()) setIsEditingTrait(false);
                     }}
                   />
-                  <button onClick={addTrait} className="bg-white text-blue-600 rounded-full w-4 h-4 flex items-center justify-center">
-                    <Plus size={10} strokeWidth={3} />
+                  <button onClick={addTrait} className="bg-white text-blue-600 rounded-full w-5 h-5 flex items-center justify-center shrink-0">
+                    <Plus size={11} strokeWidth={3} />
                   </button>
                 </div>
               ) : (
                 <button
                   onClick={() => setIsEditingTrait(true)}
-                  className="flex items-center gap-1 bg-white/10 hover:bg-white/20 text-white/90 text-[10px] font-bold px-2 py-1 rounded-full backdrop-blur-sm border border-white/10 border-dashed transition-colors"
+                  className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white/80 text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/15 border-dashed transition-colors"
                 >
-                  <Plus size={10} /> 추가
+                  <Plus size={11} /> 추가
                 </button>
               )}
             </div>
           </div>
         </div>
 
-        {/* 2. 건강 특이사항 (동적 공간 처리) */}
-        <div className="flex flex-col gap-3">
-          {/* 알레르기/투약의뢰가 둘 다 없으면 조용한 안내 문구만 */}
-          {allergies.length === 0 && !hasMedication ? (
-             <div className="bg-white border border-slate-100 rounded-2xl p-4 text-center">
-                <span className="text-xs font-bold text-slate-400">등록된 건강 특이사항이 없습니다.</span>
-             </div>
-          ) : (
-            <div className={`grid gap-3 ${hasMedication ? 'grid-cols-2' : 'grid-cols-1'}`}>
-              
-              {/* 보유 알레르기 */}
-              <div className="bg-white border border-rose-100 rounded-3xl p-4 shadow-sm flex flex-col justify-center relative overflow-hidden">
-                <div className="absolute top-0 right-0 px-2 py-0.5 bg-rose-500 text-white text-[8px] font-black rounded-bl-lg uppercase tracking-tighter">
-                  학부모 작성
-                </div>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <div className="w-5 h-5 bg-rose-100 rounded-lg flex items-center justify-center">
-                    <AlertTriangle size={10} className="text-rose-500" />
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-700">보유 알레르기</span>
-                </div>
-                {allergies.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {allergies.map(a => (
-                      <span key={a} className="bg-rose-50 text-rose-600 border border-rose-100 text-[10px] font-extrabold px-2 py-0.5 rounded-lg">
-                        {a}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-[10px] font-bold text-slate-400 mt-1">없음</p>
-                )}
-              </div>
+        {/* 2. 건강 특이사항 */}
+        <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
+          {/* 섹션 헤더 */}
+          <div className="px-5 py-3.5 border-b border-slate-50 flex items-center gap-2">
+            <div className="w-6 h-6 bg-rose-50 rounded-lg flex items-center justify-center">
+              <AlertTriangle size={13} className="text-rose-500" />
+            </div>
+            <h3 className="text-sm font-black text-slate-800">건강 특이사항</h3>
+            <span className="ml-auto text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">학부모 제공</span>
+          </div>
 
-              {/* 투약의뢰 (존재할 때만 표시) */}
-              {hasMedication && (
-                <div className="border rounded-3xl p-4 shadow-sm bg-orange-50 border-orange-100 flex flex-col justify-center relative overflow-hidden">
-                  <div className="absolute top-0 right-0 px-2 py-0.5 bg-orange-500 text-white text-[8px] font-black rounded-bl-lg uppercase tracking-tighter">
-                    학부모 작성
-                  </div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-5 h-5 rounded-lg flex items-center justify-center bg-orange-200">
-                        <Pill size={10} className="text-orange-700" />
-                      </div>
-                      <span className="text-[11px] font-bold text-orange-800">투약 의뢰 메모</span>
-                    </div>
-                  </div>
-                  <p className="text-[10px] font-bold text-orange-900 leading-relaxed bg-white/50 p-2 rounded-xl border border-orange-100/50">
-                    {medicationRequest}
-                  </p>
+          <div className="p-4 space-y-3">
+            {/* 보유 알레르기 */}
+            <div className="rounded-2xl border border-rose-100 bg-rose-50/40 p-3.5">
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <AlertTriangle size={12} className="text-rose-500" />
+                <span className="text-[11px] font-extrabold text-rose-700 uppercase tracking-wide">알레르기</span>
+              </div>
+              {allergies.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {allergies.map(a => (
+                    <span key={a} className="bg-white text-rose-600 border border-rose-200 text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
+                      {a}
+                    </span>
+                  ))}
                 </div>
+              ) : (
+                <p className="text-xs font-bold text-slate-400">등록된 알레르기 없음</p>
               )}
             </div>
-          )}
+
+            {/* 투약 의뢰 */}
+            <div className="rounded-2xl border border-amber-100 bg-amber-50/40 p-3.5">
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <Pill size={12} className="text-amber-600" />
+                <span className="text-[11px] font-extrabold text-amber-700 uppercase tracking-wide">투약 의뢰</span>
+              </div>
+              {hasMedication ? (
+                <p className="text-xs font-semibold text-slate-700 leading-relaxed bg-white/70 px-3 py-2.5 rounded-xl border border-amber-100">
+                  {medicationRequest}
+                </p>
+              ) : (
+                <p className="text-xs font-bold text-slate-400">등록된 투약 의뢰 없음</p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* 3. 날짜별 선생님 메모 */}
