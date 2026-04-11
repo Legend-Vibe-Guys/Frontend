@@ -139,7 +139,7 @@ export default function ChildEditPage() {
             </div>
             <div className="text-center mt-6">
               <h3 className="text-2xl font-black text-slate-900">{formData.name}</h3>
-              <div className="bg-amber-50 text-amber-800 px-4 py-1.5 rounded-2xl inline-block mt-2 border border-amber-100/50 shadow-sm">
+              <div className="bg-orange-50 text-orange-600 px-4 py-1.5 rounded-2xl inline-block mt-2 border border-orange-100/50 shadow-sm">
                 <p className="text-[12px] font-black uppercase tracking-wider">{formData.className || '우리 반'}</p>
               </div>
             </div>
