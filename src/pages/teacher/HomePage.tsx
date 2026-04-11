@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useAuth, useAppData } from '../../hooks';
 import { formatDateKorean, formatDateISO } from '../../utils/date';
 import {
@@ -6,12 +7,16 @@ import {
   FileText,
   ClipboardCheck,
   Clock,
+  Pencil,
+  CheckCircle2,
+  X,
+  School,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PATH } from '../../router/Path';
 
 export default function HomePage() {
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const { stats, schedules } = useAppData();
   const navigate = useNavigate();
 
@@ -22,14 +27,64 @@ export default function HomePage() {
 
   const nextSchedule = todaySchedules.find((s) => !s.isCompleted);
 
+  // 반 이름 설정 모달
+  const [isClassModalOpen, setIsClassModalOpen] = useState(false);
+  const [classNameInput, setClassNameInput] = useState(user?.className || '');
+  const [isSavingClass, setIsSavingClass] = useState(false);
+
+  const handleOpenClassModal = () => {
+    setClassNameInput(user?.className || '');
+    setIsClassModalOpen(true);
+  };
+
+  const handleSaveClassName = async () => {
+    if (!classNameInput.trim()) return;
+    setIsSavingClass(true);
+    try {
+      await updateProfile({ className: classNameInput.trim() });
+      setIsClassModalOpen(false);
+    } catch {
+      alert('저장에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsSavingClass(false);
+    }
+  };
+
+  const hasClassName = !!(user?.className && user.className.trim());
+
   return (
     <div className="p-6 pb-28 animate-fade-in">
       {/* Greeting */}
       <div className="mb-8">
         <p className="text-xs font-bold text-blue-600 mb-1">{formatDateKorean()}</p>
-        <h2 className="text-2xl font-black text-slate-900 leading-snug">
-          {user?.name} 선생님, 👋<br />오늘도 힘내세요!
-        </h2>
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="text-2xl font-black text-slate-900 leading-snug">
+            {user?.name} 선생님, 👋<br />오늘도 힘내세요!
+          </h2>
+
+          {/* 반 이름 뱃지/설정 버튼 */}
+          <button
+            onClick={handleOpenClassModal}
+            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold transition-all active:scale-95 ${
+              hasClassName
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30 hover:bg-blue-700'
+                : 'bg-slate-100 text-slate-400 border border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-500 hover:bg-blue-50'
+            }`}
+          >
+            {hasClassName ? (
+              <>
+                <School size={13} strokeWidth={2.5} />
+                {user!.className}
+                <Pencil size={11} strokeWidth={2.5} className="opacity-70" />
+              </>
+            ) : (
+              <>
+                <School size={13} strokeWidth={2} className="opacity-60" />
+                반 이름 설정
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Student Management Hero */}
@@ -165,6 +220,91 @@ export default function HomePage() {
           )}
         </div>
       </div>
+
+      {/* ── 반 이름 설정 모달 ── */}
+      {isClassModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsClassModalOpen(false); }}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+
+          {/* Sheet */}
+          <div className="relative w-full max-w-[430px] bg-white rounded-t-[2.5rem] p-6 pb-10 shadow-2xl animate-slide-up">
+            {/* Handle */}
+            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-6" />
+
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-50 rounded-2xl flex items-center justify-center">
+                  <School size={20} className="text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">반 이름 설정</h3>
+                  <p className="text-xs text-slate-400 font-medium">학부모 앱에도 반영됩니다</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsClassModalOpen(false)}
+                className="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Input */}
+            <div className="mb-6">
+              <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-2 block">
+                반 이름
+              </label>
+              <input
+                type="text"
+                value={classNameInput}
+                onChange={(e) => setClassNameInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveClassName(); }}
+                placeholder="예: 햇살반, 무지개반, 하늘반"
+                className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-200 focus:bg-white rounded-2xl px-4 py-4 text-base font-bold text-slate-800 outline-none transition-all placeholder:text-slate-300"
+                autoFocus
+              />
+            </div>
+
+            {/* Presets */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              {['햇살반', '무지개반', '하늘반', '별님반', '꽃잎반', '새싹반'].map(preset => (
+                <button
+                  key={preset}
+                  onClick={() => setClassNameInput(preset)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                    classNameInput === preset
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-slate-500 border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                  }`}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+
+            {/* Save Button */}
+            <button
+              onClick={handleSaveClassName}
+              disabled={!classNameInput.trim() || isSavingClass}
+              className="w-full py-4 bg-blue-600 text-white font-extrabold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-40 disabled:active:scale-100"
+            >
+              {isSavingClass ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <CheckCircle2 size={18} strokeWidth={2.5} />
+                  저장하기
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
