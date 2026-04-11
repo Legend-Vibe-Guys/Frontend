@@ -96,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           kidsName: data.childName,
           birthDate: data.childBirthDate,
           teacherName: data.assignedTeacher,
+          teacherUid: data.teacherUid,
         };
       }
 
