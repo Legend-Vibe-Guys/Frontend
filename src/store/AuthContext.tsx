@@ -26,6 +26,7 @@ export interface SignupData {
   childName?: string;
   childBirthDate?: string;
   assignedTeacher?: string;
+  teacherUid?: string;
   className?: string;
 }
 
