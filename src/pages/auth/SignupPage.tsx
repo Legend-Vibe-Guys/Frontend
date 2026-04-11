@@ -60,6 +60,10 @@ export default function SignupPage() {
     }
     setErrorMsg('');
     setIsLoading(true);
+
+    // 선택된 선생님의 이름 찾기
+    const selectedTeacher = teachers.find(t => t.uid === assignedTeacher);
+
     try {
       await signup({ 
         name, 
@@ -67,11 +71,10 @@ export default function SignupPage() {
         role, 
         className: role === 'teacher' ? className : '',
         ...(role === 'parent' ? { 
-          studentInfo: {
-            kidsName: childName, 
-            birthDate: childBirthDate, 
-            teacherName: assignedTeacher 
-          }
+          childName,
+          childBirthDate,
+          assignedTeacher: selectedTeacher?.name || '',
+          teacherUid: assignedTeacher // UID 전달
         } : {}) 
       });
       // 성공하면 role에 맞게 리다이렉트
@@ -161,7 +164,7 @@ export default function SignupPage() {
                   >
                     <option value="">선생님을 선택하세요</option>
                     {teachers.map(t => (
-                      <option key={t.uid} value={t.name}>
+                      <option key={t.uid} value={t.uid}>
                         {t.name} 선생님 {t.className ? `(${t.className})` : ''}
                       </option>
                     ))}

@@ -56,6 +56,11 @@ export const authAPI = {
     }),
   refresh: () => request('/auth/refresh', { method: 'POST' }),
   getTeachers: () => request<{ success: boolean; teachers: { uid: string; name: string; className: string }[] }>('/auth/teachers'),
+  updateProfile: (data: { className?: string }) =>
+    request<{ success: boolean; message: string; className: string }>('/auth/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
 };
 
 // ── Students API ──

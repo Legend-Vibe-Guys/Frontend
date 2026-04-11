@@ -87,8 +87,8 @@ export default function ParentHomePage() {
             )}
           </div>
           <div>
-            <div className="px-3 py-1 bg-black/10 backdrop-blur-md rounded-full inline-block mb-1 border border-white/20">
-              <p className="text-[11px] text-white font-extrabold">{myChild.className || '우리 반'}</p>
+            <div className="px-3.5 py-1.5 bg-white text-orange-500 rounded-2xl inline-block mb-2 shadow-lg shadow-black/5 border border-white/50">
+              <p className="text-[11px] font-black tracking-tight">{myChild.className || '우리 반'}</p>
             </div>
             <h3 className="text-2xl font-black text-white drop-shadow-sm">{myChild.name}</h3>
           </div>

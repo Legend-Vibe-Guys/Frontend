@@ -20,6 +20,7 @@ export interface User {
   name: string;
   role: UserRole;
   phone: string;
+  className?: string; // 교사의 반 이름
   createdAt?: string;
   kids?: Kid[];
 }
