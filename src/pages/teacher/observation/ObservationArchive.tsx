@@ -103,7 +103,22 @@ export function ObservationArchive({
   ];
 
   const filteredObservations = observations.filter((obs) => {
-    const matchMonth = filterMonth ? obs.date.startsWith(filterMonth) : true;
+    if (!obs.date) return false;
+    
+    // 날짜 매칭 로직 유연화 (YYYY-MM-DD, YYYY.MM.DD, YYYY-M-D 등 대응)
+    let matchMonth = true;
+    if (filterMonth) {
+      const [fYear, fMonth] = filterMonth.split('-');
+      const dateParts = obs.date.split(/[-./]/);
+      if (dateParts.length >= 2) {
+        const obsYear = dateParts[0];
+        const obsMonth = dateParts[1].padStart(2, '0');
+        matchMonth = (obsYear === fYear && obsMonth === fMonth);
+      } else {
+        matchMonth = obs.date.startsWith(filterMonth);
+      }
+    }
+
     const matchChild = filterChild ? obs.childId === filterChild : true;
     const matchDomain = filterDomain ? obs.categories.some((c) => c.name === filterDomain) : true;
     return matchMonth && matchChild && matchDomain;
@@ -283,8 +298,9 @@ export function ObservationArchive({
             );
           })
         ) : (
-          <div className="py-20 text-center text-slate-400 font-bold bg-white rounded-[2rem] border-2 border-dashed border-slate-100">
-            기록 데이터가 없습니다.
+          <div className="py-20 text-center bg-white rounded-[2rem] border-2 border-dashed border-slate-100 flex flex-col items-center gap-3">
+            <p className="text-slate-400 font-bold text-lg">기록 데이터가 없습니다.</p>
+            <p className="text-slate-300 text-sm font-medium">상단의 '작성 월' 필터나 아동 선택을 확인해보세요.</p>
           </div>
         )}
       </div>
