@@ -25,7 +25,7 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
   const [pickedEntries, setPickedEntries] = useState<Record<string, DomainDetail>>({});
 
   const childOptions = useMemo(() => [
-    { value: '', label: '아동 선택' },
+    { value: '', label: '원아 선택' },
     ...children.map(c => ({ value: c.id, label: c.name, emoji: c.profileEmoji }))
   ], [children]);
 
@@ -36,7 +36,13 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
 
   const existingReports = useMemo(() => {
     if (!reportChildId || !reportMonth) return [];
-    return monthlyReports.filter(r => r.childId === reportChildId && r.reportMonth === reportMonth);
+    return monthlyReports
+      .filter(r => r.childId === reportChildId && r.reportMonth === reportMonth)
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateA - dateB; // 오래된 순(1, 2, 3...) 정렬
+      });
   }, [monthlyReports, reportChildId, reportMonth]);
 
   const domainCounts = useMemo(() => {
@@ -84,6 +90,7 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
     try {
       await saveMonthlyReport(report);
       setShowSaveSuccess(true);
+      handleCloseEditor(); // 저장 성공 시 편집기 닫기
       setTimeout(() => setShowSaveSuccess(false), 2000);
     } finally {
       setIsSaving(false);
@@ -132,7 +139,7 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
       {showSaveSuccess && (
         <div className="fixed top-1/2 left-0 right-0 -translate-y-1/2 pointer-events-none z-[2000] flex justify-center px-6">
           <div className="bg-slate-900/95 backdrop-blur-md text-white px-8 py-5 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col items-center gap-3 border border-white/10 animate-scale-in min-w-[200px]">
-            <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/40">
+            <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-600/40">
               <CheckCircle2 size={24} className="text-white" />
             </div>
             <span className="text-sm sm:text-base font-black tracking-tight">저장이 완료되었습니다</span>
@@ -153,14 +160,14 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
               if (val) fetchMonthlyReports(val);
             }}
             placeholder="아이를 선택해주세요"
-            accentColor="emerald"
+            accentColor="blue"
           />
           <div className="flex flex-col">
             <label className="text-[11px] font-black text-slate-400 uppercase mb-3 tracking-widest px-1">📅 평가 기준 월 설정</label>
             <div className="relative w-full overflow-hidden">
               <input 
                 type="month" 
-                className="bg-white border border-slate-200 rounded-2xl px-4 py-4 font-bold text-left outline-none w-full min-w-0 max-w-full focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50/50 transition-all text-slate-700 shadow-sm box-border" 
+                className="bg-white border border-slate-200 rounded-2xl px-4 py-4 font-bold text-left outline-none w-full min-w-0 max-w-full focus:border-blue-400 focus:ring-4 focus:ring-blue-50/50 transition-all text-slate-700 shadow-sm box-border" 
                 value={reportMonth} 
                 onChange={(e) => { setReportMonth(e.target.value); setReport(null); setPickedEntries({}); }} 
               />
@@ -174,28 +181,28 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
                <div className="w-full mb-10">
                  <div className="flex items-center justify-between mb-4 px-1">
                    <h3 className="text-sm font-black text-slate-500 uppercase tracking-wider">작성된 종합 평가</h3>
-                   <span className="bg-emerald-100 text-emerald-600 px-2.5 py-1 rounded-full text-[10px] font-black">{existingReports.length}건</span>
+                   <span className="bg-blue-100 text-blue-600 px-2.5 py-1 rounded-full text-[10px] font-black">{existingReports.length}건</span>
                  </div>
                  <div className="space-y-3">
-                   {existingReports.map((r) => (
+                   {existingReports.map((r, index) => (
                      <div 
                       key={r.id} 
                       onClick={() => handleEditExisting(r)}
-                      className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex items-center justify-between group hover:border-emerald-200 hover:bg-emerald-50/30 transition-all cursor-pointer"
+                      className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex items-center justify-between group hover:border-blue-200 hover:bg-blue-50/30 transition-all cursor-pointer"
                      >
                        <div className="flex flex-col flex-1">
-                         <span className="text-sm font-bold text-slate-700">{selectedChild?.name}의 {selectedMonthNum}월 종합 평가</span>
+                         <span className="text-sm font-bold text-slate-700">{index + 1}. {selectedChild?.name}의 {selectedMonthNum}월 종합 평가</span>
                          <span className="text-[10px] text-slate-400 font-medium">
                            {r.updatedAt ? `최근 수정: ${r.updatedAt.split('T')[0]}` : `작성일: ${r.createdAt?.split('T')[0] || '날짜 정보 없음'}`}
                          </span>
                        </div>
                        <div className="flex items-center gap-3 ml-4">
-                         <div className="text-slate-300 group-hover:text-emerald-400 transition-colors">
+                         <div className="text-slate-300 group-hover:text-blue-400 transition-colors">
                            <Edit2 size={14} />
                          </div>
                          <button 
                            onClick={(e) => handleDelete(e, r.id)}
-                           className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-xl text-slate-300 hover:text-rose-500 hover:border-rose-100 transition-all shadow-sm active:scale-95"
+                           className="w-10 h-10 flex items-center justify-center bg-rose-50/50 border border-rose-100 rounded-xl text-rose-500 hover:bg-rose-100 hover:text-rose-600 transition-all shadow-sm active:scale-95 disabled:opacity-50"
                          >
                            <Trash2 size={16} />
                          </button>
@@ -230,26 +237,26 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
                           isEmpty 
                             ? 'bg-rose-50 border-rose-100 text-rose-500 shadow-sm shadow-rose-50' 
                             : pickedEntries[domain]
-                              ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-100'
+                              ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-100'
                               : hasData
-                                ? 'bg-white border-slate-200 text-emerald-600 hover:border-emerald-300 hover:shadow-md'
+                                ? 'bg-white border-slate-200 text-blue-600 hover:border-blue-300 hover:shadow-md'
                                 : 'bg-slate-50 border-slate-100 text-slate-600'
                         }`}
                       >
-                        <span className={pickedEntries[domain] ? 'text-emerald-100 text-[10px] uppercase tracking-tighter' : isEmpty ? 'text-rose-300 text-[10px] uppercase tracking-tighter' : hasData ? 'text-emerald-400 text-[10px] uppercase tracking-tighter' : 'text-slate-400 text-[10px] uppercase tracking-tighter'}>
+                        <span className={pickedEntries[domain] ? 'text-blue-100 text-[10px] uppercase tracking-tighter' : isEmpty ? 'text-rose-300 text-[10px] uppercase tracking-tighter' : hasData ? 'text-blue-400 text-[10px] uppercase tracking-tighter' : 'text-slate-400 text-[10px] uppercase tracking-tighter'}>
                           {getDomainDisplayName(domain)}
                         </span>
                         <div className="flex items-center justify-between">
-                          <span className={pickedEntries[domain] ? 'font-black text-sm text-white' : isEmpty ? 'font-black text-sm' : hasData ? 'font-black text-emerald-700 text-sm' : 'text-slate-700 text-sm'}>
+                          <span className={pickedEntries[domain] ? 'font-black text-sm text-white' : isEmpty ? 'font-black text-sm' : hasData ? 'font-black text-blue-700 text-sm' : 'text-slate-700 text-sm'}>
                             {count}건 {pickedEntries[domain] && '• 선택됨'}
                           </span>
                           {hasData && !pickedEntries[domain] && (
-                            <MousePointer2 size={12} className="opacity-0 group-hover/btn:opacity-100 transition-opacity text-emerald-400" />
+                            <MousePointer2 size={12} className="opacity-0 group-hover/btn:opacity-100 transition-opacity text-blue-400" />
                           )}
                         </div>
                         {pickedEntries[domain] && (
                           <div className="absolute top-1 right-2">
-                            <CheckCircle2 size={14} className="text-emerald-200" />
+                            <CheckCircle2 size={14} className="text-blue-200" />
                           </div>
                         )}
                       </button>
@@ -282,7 +289,7 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
       </div>
 
       {report && (
-        <div className="fixed inset-0 z-[150] bg-white animate-slide-up overflow-y-auto print:relative print:z-0 print:overflow-visible">
+        <div className="fixed inset-0 z-[150] bg-white animate-slide-up overflow-y-auto print:static print:z-0 print:overflow-visible print:bg-white print:h-auto">
           <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md px-6 py-4 border-b border-slate-100 flex items-center justify-between print:hidden">
             <button 
               onClick={handleCloseEditor}
@@ -311,15 +318,15 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
             <div className="space-y-16">
               {nuriDomains.map(domain => (
                 <div key={domain} className="group break-inside-avoid">
-                  <h4 className="font-black text-emerald-700 mb-6 flex items-center gap-3 text-sm sm:text-base md:text-lg uppercase tracking-wider border-l-4 border-emerald-500 pl-4 print:mb-2 print:text-base print:border-l-8">
+                  <h4 className="font-black text-blue-700 mb-6 flex items-center gap-3 text-sm sm:text-base md:text-lg uppercase tracking-wider border-l-4 border-blue-500 pl-4 print:mb-2 print:text-base print:border-l-8">
                     {domain}
                   </h4>
                   <div className="grid grid-cols-1 gap-6">
                     <div className="relative">
-                      <label className="text-[10px] font-black text-slate-400 mb-2 ml-1 uppercase block tracking-tighter print:hidden">🔎 관찰 내용 (사실)</label>
+                      <label className="text-[10px] font-black text-slate-400 mb-2 ml-1 uppercase block tracking-tighter print:hidden">🔎 관찰 내용 </label>
                       <textarea
-                        className="w-full text-sm sm:text-base leading-relaxed font-medium text-slate-600 bg-slate-50/50 border border-slate-100 rounded-2xl p-4 sm:p-5 outline-none focus:bg-white focus:border-slate-300 transition-all resize-none shadow-inner print:p-0 print:text-[14px] print:text-slate-700 print:bg-transparent print:border-none print:shadow-none print:min-h-0 print:leading-snug"
-                        style={{ minHeight: '120px' }}
+                        className="w-full text-[13px] sm:text-sm leading-relaxed font-medium text-slate-600 bg-slate-50/50 border border-slate-100 rounded-2xl p-4 sm:p-5 outline-none focus:bg-white focus:border-slate-300 transition-all resize-y shadow-inner print:p-0 print:pt-4 print:pb-6 print:text-[14px] print:text-slate-700 print:bg-transparent print:border-none print:shadow-none print:min-h-0 print:leading-relaxed print:rounded-none"
+                        style={{ minHeight: '200px' }}
                         value={report.details[domain]?.content || ''}
                         onChange={(e) => {
                           setReport({
@@ -333,10 +340,10 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
                       />
                     </div>
                     <div className="relative">
-                      <label className="text-[10px] font-black text-emerald-500 mb-2 ml-1 uppercase block tracking-tighter print:hidden">💡 관찰 평가 (분석)</label>
+                      <label className="text-[10px] font-black text-blue-500 mb-2 ml-1 uppercase block tracking-tighter print:hidden">💡 관찰 평가 </label>
                       <textarea
-                        className="w-full text-sm sm:text-base leading-relaxed font-bold text-slate-800 bg-white border border-emerald-100 rounded-2xl p-4 sm:p-5 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50/30 transition-all resize-none shadow-sm print:p-0 print:text-[14px] print:text-slate-900 print:bg-transparent print:border-none print:shadow-none print:min-h-0 print:leading-snug print:mt-1"
-                        style={{ minHeight: '140px' }}
+                        className="w-full text-[13px] sm:text-sm leading-relaxed font-bold text-slate-800 bg-white border border-blue-100 rounded-2xl p-4 sm:p-5 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50/30 transition-all resize-y shadow-sm print:p-0 print:pt-2 print:pb-8 print:text-[14px] print:text-slate-900 print:bg-transparent print:border-none print:shadow-none print:min-h-0 print:leading-relaxed print:mt-1 print:rounded-none"
+                        style={{ minHeight: '200px' }}
                         value={report.details[domain]?.evaluation || ''}
                         onChange={(e) => {
                           setReport({
@@ -354,11 +361,11 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
               ))}
             </div>
             
-            <div className="mt-20 flex flex-col gap-6 pb-20 print:hidden max-w-4xl mx-auto w-full">
+            <div className="mt-20 flex flex-col gap-6 pb-40 print:hidden max-w-4xl mx-auto w-full">
               {/* 상단 버튼 그룹: 저장 및 인쇄 */}
               <div className="grid grid-cols-2 gap-4">
                 <button 
-                  className="py-5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all disabled:opacity-50" 
+                  className="py-5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all disabled:opacity-50" 
                   onClick={handleSave}
                   disabled={isSaving}
                 >
@@ -402,7 +409,7 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
           <div className="bg-white w-full max-w-2xl max-h-[80vh] rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-scale-in">
             <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
                   <Sparkles size={20} />
                 </div>
                 <div>
@@ -423,7 +430,7 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
                   return (
                     <div 
                       key={obs.id}
-                      className={`group border-2 rounded-3xl p-5 transition-all cursor-pointer ${isSelected ? 'border-emerald-500 bg-emerald-50/30' : 'border-slate-100 hover:border-emerald-200 hover:bg-slate-50/50'}`}
+                      className={`group border-2 rounded-3xl p-5 transition-all cursor-pointer ${isSelected ? 'border-blue-500 bg-blue-50/30' : 'border-slate-100 hover:border-blue-200 hover:bg-slate-50/50'}`}
                       onClick={() => {
                         setPickedEntries({
                           ...pickedEntries,
@@ -435,7 +442,7 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-[11px] font-black text-slate-400 bg-slate-100 px-3 py-1 rounded-full">{obs.date}</span>
                         {isSelected && (
-                          <span className="text-[11px] font-black text-emerald-600 flex items-center gap-1">
+                          <span className="text-[11px] font-black text-blue-600 flex items-center gap-1">
                             <CheckCircle2 size={14} /> 선택됨
                           </span>
                         )}
@@ -446,8 +453,8 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
                           <p className="text-sm font-bold text-slate-700 leading-relaxed line-clamp-3">{obs.content}</p>
                         </div>
                         <div>
-                          <label className="text-[10px] font-black text-emerald-500 uppercase block mb-1">교사 평가</label>
-                          <p className="text-sm font-bold text-emerald-700 leading-relaxed line-clamp-3 italic">"{obs.evaluation}"</p>
+                          <label className="text-[10px] font-black text-blue-500 uppercase block mb-1">교사 평가</label>
+                          <p className="text-sm font-bold text-blue-700 leading-relaxed line-clamp-3 italic">"{obs.evaluation}"</p>
                         </div>
                       </div>
                     </div>

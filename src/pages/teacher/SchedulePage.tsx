@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAppData } from '../../hooks';
-import { getDaysInMonth, getFirstDayOfMonth } from '../../utils/date';
+import { formatDateISO } from '../../utils/date';
 import { ChevronLeft, ChevronRight, Check, Plus, Edit2, Trash2, X, Clock, Type, AlignLeft } from 'lucide-react';
 import type { ScheduleItem } from '../../types';
 
@@ -28,37 +28,42 @@ export default function SchedulePage() {
     .filter(s => s.date === selectedDateStr)
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
-  const daysInMonth = getDaysInMonth(currentYear, currentMonth);
-  const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
-  const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-
-  const blanks = Array.from({ length: firstDay }, (_, i) => (
-    <span key={`blank-${i}`} className="p-2" />
-  ));
-
-  const days = Array.from({ length: daysInMonth }, (_, i) => {
-    const day = i + 1;
-    const isSelected = day === selectedDay;
-    const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
-    const hasSchedule = schedules.some(s => s.date === `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
-
-    return (
-      <span
-        key={day}
-        className={`text-xs p-2 rounded-xl cursor-pointer transition-all text-center relative
-          ${isSelected ? 'bg-slate-900 text-white font-bold' : ''}
-          ${isToday && !isSelected ? 'bg-blue-50 text-blue-600 font-bold' : ''}
-          ${!isSelected && !isToday ? 'text-slate-600 hover:bg-slate-100' : ''}
-        `}
-        onClick={() => setSelectedDay(day)}
-      >
-        {day}
-        {hasSchedule && !isSelected && (
-          <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-400 rounded-full" />
-        )}
-      </span>
-    );
-  });
+  const calendarData = useMemo(() => {
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+    const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
+    const startDay = firstDayOfMonth.getDay();
+    
+    const days = [];
+    
+    // Padding for previous month
+    const prevMonthLastDay = new Date(currentYear, currentMonth, 0).getDate();
+    for (let i = startDay - 1; i >= 0; i--) {
+      days.push({ 
+        day: prevMonthLastDay - i, 
+        month: currentMonth - 1, 
+        year: currentYear, 
+        isCurrentMonth: false 
+      });
+    }
+    
+    // Current month days
+    for (let i = 1; i <= lastDayOfMonth.getDate(); i++) {
+      days.push({ day: i, month: currentMonth, year: currentYear, isCurrentMonth: true });
+    }
+    
+    // Padding for next month
+    const remainingSlots = 42 - days.length;
+    for (let i = 1; i <= remainingSlots; i++) {
+      days.push({ 
+        day: i, 
+        month: currentMonth + 1, 
+        year: currentYear, 
+        isCurrentMonth: false 
+      });
+    }
+    
+    return days;
+  }, [currentYear, currentMonth]);
 
   const handleOpenAddModal = () => {
     setEditingId(null);
@@ -117,40 +122,84 @@ export default function SchedulePage() {
           <h2 className="text-2xl font-black text-slate-900">우리 반 일정</h2>
           <button 
             onClick={handleOpenAddModal}
-            className="w-10 h-10 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg active:scale-95 transition-all cursor-pointer"
+            className="w-10 h-10 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200 active:scale-95 transition-all cursor-pointer"
           >
             <Plus size={20} />
           </button>
         </div>
 
-        {/* Calendar */}
-        <div className="bg-white border border-slate-100 p-5 rounded-[2.5rem] mb-10 shadow-sm">
-          <div className="flex justify-between items-center px-1 mb-6">
-            <p className="font-black text-base text-slate-800">{currentYear}년 {currentMonth + 1}월</p>
+        {/* Calendar Card */}
+        <div className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-6 mb-10 border border-white/60 shadow-xl shadow-slate-200/30">
+          {/* Calendar Header */}
+          <div className="flex justify-between items-center mb-6 px-2">
+            <h3 className="text-[18px] font-black text-slate-800">
+              {currentYear}년 {currentMonth + 1}월
+            </h3>
             <div className="flex gap-2">
-              <button onClick={() => changeMonth(-1)} className="text-slate-400 p-2 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer">
-                <ChevronLeft size={18} />
+              <button 
+                onClick={() => changeMonth(-1)}
+                className="w-10 h-10 flex items-center justify-center bg-slate-50/50 rounded-xl text-slate-400 hover:text-slate-800 transition-colors cursor-pointer"
+              >
+                <ChevronLeft size={20} strokeWidth={3} />
               </button>
-              <button onClick={() => changeMonth(1)} className="text-slate-400 p-2 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer">
-                <ChevronRight size={18} />
+              <button 
+                onClick={() => changeMonth(1)}
+                className="w-10 h-10 flex items-center justify-center bg-slate-50/50 rounded-xl text-slate-400 hover:text-slate-800 transition-colors cursor-pointer"
+              >
+                <ChevronRight size={20} strokeWidth={3} />
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-7 gap-1 text-center">
-            {dayLabels.map((d, i) => (
-              <span key={i} className="text-[10px] font-black text-slate-300 p-2 uppercase">{d}</span>
+
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7 gap-y-4 text-center">
+            {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (
+              <span key={i} className={`text-[11px] font-black uppercase tracking-wider mb-2 ${i === 0 ? 'text-rose-300' : i === 6 ? 'text-sky-300' : 'text-slate-400'}`}>
+                {d}
+              </span>
             ))}
-            {blanks}
-            {days}
+            
+            {calendarData.map((d, i) => {
+              const dateISO = formatDateISO(new Date(d.year, d.month, d.day));
+              const isSelected = selectedDateStr === dateISO;
+              const isToday = formatDateISO(today) === dateISO;
+              const hasSchedule = Array.isArray(schedules) && schedules.some(s => s.date === dateISO);
+
+              return (
+                <button
+                  key={i}
+                  onClick={() => {
+                    const date = new Date(d.year, d.month, d.day);
+                    setCurrentYear(date.getFullYear());
+                    setCurrentMonth(date.getMonth());
+                    setSelectedDay(date.getDate());
+                  }}
+                  className={`relative h-11 w-11 mx-auto flex flex-col items-center justify-center rounded-2xl transition-all duration-300 cursor-pointer
+                    ${isSelected ? 'bg-blue-600 text-white shadow-lg shadow-blue-100 scale-110 z-10' : 'hover:bg-slate-50'}
+                    ${!d.isCurrentMonth ? 'opacity-20' : ''}
+                  `}
+                >
+                  <span className={`text-[15px] font-black ${isSelected ? 'text-white' : isToday ? 'text-blue-500' : 'text-slate-700'}`}>
+                    {d.day}
+                  </span>
+                  {hasSchedule && !isSelected && (
+                    <span className="absolute bottom-1.5 w-1 h-1 bg-blue-400 rounded-full" />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Timeline Section Header */}
         <div className="flex items-center justify-between mb-6 px-2">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-6 bg-blue-500 rounded-full" />
-            <h3 className="font-black text-slate-800">{currentMonth + 1}월 {selectedDay}일 <span className="text-slate-400 text-xs ml-1">{dailySchedules.length}건</span></h3>
+            <div className="w-2 h-6 bg-blue-600 rounded-full" />
+            <h3 className="font-black text-[17px] text-slate-800">{currentMonth + 1}월 {selectedDay}일</h3>
           </div>
+          <span className="text-[12px] font-bold text-slate-500 bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
+            {dailySchedules.length}개의 일정
+          </span>
         </div>
 
         {/* Timeline */}
@@ -163,21 +212,21 @@ export default function SchedulePage() {
             dailySchedules.map((s) => (
               <div key={s.id} className={`group relative ${s.isCompleted ? 'opacity-40' : ''}`}>
                 <span
-                  className="absolute top-1 -left-[43px] w-5 h-5 rounded-full border-4 border-white shadow-sm transition-all z-10"
+                  className="absolute top-6 -left-[43px] w-5 h-5 rounded-full border-4 border-white shadow-sm transition-all z-10"
                   style={{ background: s.isCompleted ? s.color : '#cbd5e1' }}
                 />
-                <div className="flex items-center justify-between gap-4">
+                <div className="bg-white/70 backdrop-blur-lg rounded-[2.2rem] p-6 border border-white/60 shadow-sm flex items-center justify-between gap-4 transition-all hover:shadow-md">
                   <div className="flex-1">
-                    <div className="flex flex-col mb-1">
-                      <p className="text-[10px] font-black uppercase tracking-wider mb-[2px]" style={{ color: s.color || '#3b82f6' }}>
+                    <div className="flex flex-col mb-1.5">
+                      <p className="text-[12px] font-black uppercase tracking-wider mb-1" style={{ color: s.color || '#3b82f6' }}>
                         {s.startTime} - {s.endTime}
                       </p>
-                      <h4 className={`font-black text-sm ${s.isCompleted ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+                      <h4 className={`text-[18px] font-black leading-tight ${s.isCompleted ? 'line-through text-slate-400' : 'text-slate-900'}`}>
                         {s.title}
                       </h4>
                     </div>
                     {s.description && (
-                      <p className="text-[11px] text-slate-400 leading-relaxed pl-0">{s.description}</p>
+                      <p className="text-[13px] text-slate-500 font-medium leading-relaxed opacity-80">{s.description}</p>
                     )}
                   </div>
                   
@@ -277,7 +326,7 @@ export default function SchedulePage() {
                 >취소</button>
                 <button 
                   onClick={handleSubmit}
-                  className="flex-[2] py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl shadow-slate-900/20 transition-all active:scale-95 cursor-pointer"
+                  className="flex-[2] py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-900/20 transition-all active:scale-95 cursor-pointer"
                 >{editingId ? '수정 완료' : '일정 추가'}</button>
               </div>
             </div>

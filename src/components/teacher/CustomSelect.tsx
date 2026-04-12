@@ -13,7 +13,7 @@ interface CustomSelectProps {
   options: Option[];
   onChange: (value: string) => void;
   placeholder?: string;
-  accentColor?: 'indigo' | 'emerald';
+  accentColor?: 'indigo' | 'emerald' | 'blue';
 }
 
 export function CustomSelect({ 
@@ -36,6 +36,13 @@ export function CustomSelect({
       text: 'text-indigo-600',
       bg: 'bg-indigo-50',
       hover: 'hover:bg-indigo-50/50'
+    },
+    blue: {
+      border: 'focus:border-blue-400',
+      ring: 'focus:ring-blue-50/50',
+      text: 'text-blue-600',
+      bg: 'bg-blue-50',
+      hover: 'hover:bg-blue-50/50'
     },
     emerald: {
       border: 'focus:border-emerald-400',

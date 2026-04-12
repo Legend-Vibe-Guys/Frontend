@@ -3,7 +3,7 @@ import type { KeyboardEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppData, useAuth } from '../../hooks';
 import { memosAPI, studentsAPI, API_BASE } from '../../api/api';
-import { ChevronLeft, AlertTriangle, Pill, BookOpen, Save, CheckCircle, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertTriangle, Pill, BookOpen, Save, CheckCircle, Plus, X } from 'lucide-react';
 import { formatDateISO } from '../../utils/date';
 
 const getFullImageUrl = (url?: string) => {
@@ -85,6 +85,12 @@ export default function StudentDetailPage() {
     // 2. 뷰 전환
     setSelectedDate(date);
     setCurrentMemo(memosByDate[date] || '');
+  };
+
+  const changeDate = (days: number) => {
+    const date = new Date(selectedDate);
+    date.setDate(date.getDate() + days);
+    handleDateChange(formatDateISO(date));
   };
 
   const handleSaveMemo = async () => {
@@ -269,12 +275,26 @@ export default function StudentDetailPage() {
               </div>
               <h3 className="text-sm font-black text-slate-800">날짜별 메모</h3>
             </div>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={e => handleDateChange(e.target.value)}
-              className="text-[11px] font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 cursor-pointer border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-blue-400 transition-colors"
-            />
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={() => changeDate(-1)}
+                className="w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-400 hover:text-slate-800 rounded-lg transition-colors cursor-pointer"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={e => handleDateChange(e.target.value)}
+                className="text-[11px] font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 cursor-pointer border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-blue-400 transition-colors"
+              />
+              <button 
+                onClick={() => changeDate(1)}
+                className="w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-400 hover:text-slate-800 rounded-lg transition-colors cursor-pointer"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
           </div>
 
           <textarea

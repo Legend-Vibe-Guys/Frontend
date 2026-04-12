@@ -22,8 +22,8 @@ const TEACHER_TABS = [
 const PARENT_TABS = [
   { path: PATH.PARENT.ROOT, icon: Home, label: '홈', end: true },
   { path: PATH.PARENT.SCHEDULE, icon: Calendar, label: '일정' },
-  { path: PATH.PARENT.OBSERVATION, icon: Camera, label: '성장 기록' },
   { path: PATH.PARENT.NOTICES, icon: FileText, label: '알림장' },
+  { path: PATH.PARENT.OBSERVATION, icon: Camera, label: '성장 기록' },
 ];
 
 export default function BottomNav() {

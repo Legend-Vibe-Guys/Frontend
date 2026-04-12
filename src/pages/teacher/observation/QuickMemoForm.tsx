@@ -1,4 +1,4 @@
-import { Sparkles, Loader2, Save, Mic } from 'lucide-react';
+import { Loader2, Mic } from 'lucide-react';
 import type { Child, ObservationLog, NuriDomain } from '../../../types';
 import { ChildAvatar } from '../../../components/common/ChildAvatar';
 import { useState, useEffect, useRef } from 'react';
@@ -238,19 +238,18 @@ export function QuickMemoForm({
       {!aiDraft || isGenerating ? (
         <div className="flex gap-3">
           <button
-            className="flex-[2] py-5 text-lg bg-slate-900 hover:bg-slate-800 text-white font-black rounded-2xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-50"
+            className="flex-[2] py-5 text-lg bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black rounded-2xl flex items-center justify-center active:scale-[0.98] transition-all disabled:opacity-40"
             onClick={onGenerateAI}
             disabled={isGenerating || isSaving || !memo.trim() || !selectedCategory}
           >
-            {isGenerating ? <><Loader2 size={24} className="animate-spin" /> AI 분석 중...</> : <><Sparkles size={24} className="text-amber-400" /> 초안 완성하기</>}
+            {isGenerating ? "AI 분석 중..." : "초안 완성하기"}
           </button>
           <button
-            className="flex-1 py-5 text-lg bg-white border-2 border-slate-900 text-slate-900 font-black rounded-2xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-50"
+            className="flex-1 py-5 text-lg bg-slate-700 hover:bg-slate-800 text-white font-black rounded-2xl flex items-center justify-center active:scale-[0.98] transition-all disabled:opacity-40"
             onClick={onSaveDirect}
             disabled={isGenerating || isSaving || !memo.trim() || !selectedCategory}
           >
-            {isSaving ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} />}
-            저장
+            {isSaving ? "저장 중..." : "바로 저장"}
           </button>
         </div>
       ) : (
@@ -285,12 +284,11 @@ export function QuickMemoForm({
           </div>
 
           <button
-            className="w-full py-5 text-lg bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-lg"
+            className="w-full py-5 text-lg bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl flex items-center justify-center active:scale-[0.98] transition-all shadow-lg"
             onClick={onSave}
             disabled={isSaving}
           >
-            {isSaving ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} />}
-            저장하기
+            {isSaving ? "저장 중..." : "바로 저장"}
           </button>
         </div>
       )}
