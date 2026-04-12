@@ -228,7 +228,7 @@ export const uploadAPI = {
 // ── Monthly Report API ──
 export const monthlyReportAPI = {
   save: (data: MonthlyReport) => 
-    request<{ success: boolean; id: string }>('/report/monthly', {
+    request<{ success: boolean; id: string; createdAt?: string; updatedAt?: string }>('/report/monthly', {
       method: 'POST',
       body: JSON.stringify(data)
     }),

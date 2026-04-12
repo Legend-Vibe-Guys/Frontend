@@ -94,7 +94,7 @@ export default function ObservationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 relative print:bg-white print:p-0 overflow-x-hidden">
+    <div className="min-h-screen relative print:bg-white print:p-0 overflow-x-hidden">
       
       {activePage === 'home' && (
         <ObservationHome onNavigate={(page) => setActivePage(page)} />
@@ -104,11 +104,11 @@ export default function ObservationPage() {
         <div className="p-6 md:p-12 max-w-4xl mx-auto animate-fade-in-right h-full print:hidden">
           <div className="flex items-center gap-4 mb-6">
             <button onClick={handleGoBack} className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all active:scale-90 shadow-sm"><ArrowLeft size={18} /></button>
-            <h2 className="text-xl font-black text-slate-800 tracking-tight">아동 목록</h2>
+            <h2 className="text-xl font-black text-slate-800 tracking-tight">원아 목록</h2>
           </div>
 
           <div className="mb-6 flex items-center justify-between px-1">
-             <h3 className="text-lg font-black text-slate-800">아동 목록</h3>
+             <h3 className="text-lg font-black text-slate-800">원아 목록</h3>
              <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100/50 shadow-sm">인원 {children.length}명</span>
           </div>
 

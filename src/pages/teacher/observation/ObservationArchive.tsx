@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ChevronDown, ChevronUp, Trash2, Edit2, Save, X, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, Edit2, Save, X, Loader2 } from 'lucide-react';
 import { CustomSelect } from '../../../components/teacher/CustomSelect';
 import { API_BASE } from '../../../api/api';
 import type { ObservationLog, Child, NuriDomain } from '../../../types';
@@ -23,6 +23,15 @@ export function ObservationArchive({
   const [filterDomain, setFilterDomain] = useState<string>('');
   const [expandedObs, setExpandedObs] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  // 페이지네이션 상태
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
+
+  // 필터 변경 시 페이지 초기화
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterMonth, filterChild, filterDomain]);
 
   // 편집 관련 상태
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -162,7 +171,10 @@ export function ObservationArchive({
 
       <div className="space-y-4">
         {filteredObservations.length > 0 ? (
-          filteredObservations.map((obs) => {
+          <>
+            {filteredObservations
+              .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+              .map((obs) => {
             const childData = children.find((c) => c.id === obs.childId);
             return (
               <div
@@ -296,11 +308,43 @@ export function ObservationArchive({
                 )}
               </div>
             );
-          })
+          })}
+          
+          {/* 페이지네이션 컨트롤 */}
+          {filteredObservations.length > PAGE_SIZE && (
+            <div className="flex items-center justify-center gap-4 mt-8 py-4 px-6 bg-white border border-slate-100 rounded-[2rem] shadow-sm animate-fade-in">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-xl text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm active:scale-95"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-black text-indigo-600 px-3 py-1 bg-indigo-50 rounded-lg">
+                  {currentPage}
+                </span>
+                <span className="text-slate-300 font-bold">/</span>
+                <span className="text-sm font-bold text-slate-500">
+                  {Math.ceil(filteredObservations.length / PAGE_SIZE)}
+                </span>
+              </div>
+              
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(filteredObservations.length / PAGE_SIZE), prev + 1))}
+                disabled={currentPage === Math.ceil(filteredObservations.length / PAGE_SIZE)}
+                className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-xl text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm active:scale-95"
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          )}
+          </>
         ) : (
           <div className="py-20 text-center bg-white rounded-[2rem] border-2 border-dashed border-slate-100 flex flex-col items-center gap-3">
             <p className="text-slate-400 font-bold text-lg">기록 데이터가 없습니다.</p>
-            <p className="text-slate-300 text-sm font-medium">상단의 '작성 월' 필터나 아동 선택을 확인해보세요.</p>
+            <p className="text-slate-300 text-sm font-medium">상단의 '작성 월' 필터나 원아를 선택을 확인해보세요.</p>
           </div>
         )}
       </div>
