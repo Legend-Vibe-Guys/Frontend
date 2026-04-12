@@ -460,7 +460,15 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
     try {
       const res = await monthlyReportAPI.save(report);
       if (res.success && res.id) {
-        const savedReport = { ...report, id: res.id, isSaved: true };
+        // 백엔드에서 온 createdAt이 없으면 현재 시간으로 보정
+        const now = new Date().toISOString();
+        const savedReport: MonthlyReport = { 
+          ...report, 
+          id: res.id, 
+          isSaved: true,
+          createdAt: res.createdAt || report.createdAt || now,
+          updatedAt: res.updatedAt || now
+        };
         setMonthlyReports((prev) => {
           const existingIndex = prev.findIndex(r => r.id === report.id || r.id === res.id);
           if (existingIndex >= 0) {
@@ -468,7 +476,7 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
             newReports[existingIndex] = savedReport;
             return newReports;
           }
-          return [savedReport, ...prev];
+          return [...prev, savedReport]; // 새 보고서는 뒤에 추가 (나중에 정렬됨)
         });
       }
     } catch (error) {

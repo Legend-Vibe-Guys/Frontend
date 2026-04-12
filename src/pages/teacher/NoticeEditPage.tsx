@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppData } from '../../hooks';
-import { ChevronLeft, Save, Trash2, Camera, Megaphone } from 'lucide-react';
+import { ChevronLeft, Trash2, Camera, Megaphone } from 'lucide-react';
 import { PATH } from '../../router/Path';
 import { API_BASE } from '../../api/api';
 
@@ -153,7 +153,7 @@ export default function NoticeEditPage() {
 
         {/* Content Section */}
         <div className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-6 shadow-sm overflow-hidden relative">
-           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500" />
+           
            
            <div className="mb-6">
              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block ml-1">제목</label>
@@ -227,15 +227,13 @@ export default function NoticeEditPage() {
         <button
           onClick={handleSave}
           disabled={isSaving || isDeleting}
-          className="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 hover:bg-slate-800 disabled:bg-slate-400"
-          style={{ boxShadow: '0 12px 24px rgba(0,0,0,0.15)' }}
+          className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black rounded-2xl shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-40"
+          style={{ boxShadow: '0 8px 20px rgba(37, 99, 235, 0.2)' }}
         >
           {isSaving ? (
             <span className="animate-pulse">저장 중...</span>
           ) : (
-            <>
-              <Save size={18} /> 수정사항 저장하기
-            </>
+            "수정사항 저장하기"
           )}
         </button>
       </div>
