@@ -1,12 +1,24 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAppData } from '../../hooks';
-import { BookOpen, Calendar, ChevronRight, Sparkles } from 'lucide-react';
+import { BookOpen, Calendar, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
 
 export default function ParentObservationPage() {
   const { children, monthlyReports, fetchMonthlyReports } = useAppData();
   
   const currentMonth = new Date().toISOString().slice(0, 7);
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+
+  const handlePrevMonth = () => {
+    const date = new Date(selectedMonth + '-01');
+    date.setMonth(date.getMonth() - 1);
+    setSelectedMonth(date.toISOString().slice(0, 7));
+  };
+
+  const handleNextMonth = () => {
+    const date = new Date(selectedMonth + '-01');
+    date.setMonth(date.getMonth() + 1);
+    setSelectedMonth(date.toISOString().slice(0, 7));
+  };
 
   const myChild = children[0];
 
@@ -47,19 +59,32 @@ export default function ParentObservationPage() {
       </div>
 
       {/* Month Picker */}
-      <div className="flex items-center gap-3 bg-white/70 backdrop-blur-md p-4 rounded-[2rem] border border-white/60 shadow-sm mb-8">
-        <div className="w-10 h-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center shrink-0">
-          <Calendar size={20} />
-        </div>
-        <div className="flex-1"> 
+      <div className="flex items-center justify-between bg-white/70 backdrop-blur-md p-2 rounded-[2rem] border border-white/60 shadow-sm mb-8">
+        <button 
+          onClick={handlePrevMonth}
+          className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-xl transition-all"
+        >
+          <ChevronLeft size={20} />
+        </button>
+        
+        <div className="flex items-center gap-2 px-2">
+          <div className="w-8 h-8 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center shrink-0">
+            <Calendar size={16} />
+          </div>
           <input
             type="month"
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="bg-transparent font-black text-slate-800 text-[15px] outline-none cursor-pointer w-full"
+            className="bg-transparent font-black text-slate-800 text-[15px] outline-none cursor-pointer w-[120px] text-center"
           />
         </div>
-        <ChevronRight size={18} className="text-slate-300 shrink-0" />
+
+        <button 
+          onClick={handleNextMonth}
+          className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-xl transition-all"
+        >
+          <ChevronRight size={20} />
+        </button>
       </div>
 
       {currentMonthlyReport ? (
