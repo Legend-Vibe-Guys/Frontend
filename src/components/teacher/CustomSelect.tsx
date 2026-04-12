@@ -43,6 +43,13 @@ export function CustomSelect({
       text: 'text-blue-600',
       bg: 'bg-blue-50',
       hover: 'hover:bg-blue-50/50'
+    },
+    emerald: {
+      border: 'focus:border-emerald-400',
+      ring: 'focus:ring-emerald-50/50',
+      text: 'text-emerald-600',
+      bg: 'bg-emerald-50',
+      hover: 'hover:bg-emerald-50/50'
     }
   };
 
