@@ -34,15 +34,12 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
     return observations.filter(obs => obs.childId === reportChildId && obs.date.startsWith(reportMonth));
   }, [observations, reportChildId, reportMonth]);
 
-  const existingReports = useMemo(() => {
-    if (!reportChildId || !reportMonth) return [];
-    return monthlyReports
-      .filter(r => r.childId === reportChildId && r.reportMonth === reportMonth)
-      .sort((a, b) => {
-        const dateA = new Date(a.createdAt || 0).getTime();
-        const dateB = new Date(b.createdAt || 0).getTime();
-        return dateA - dateB; // 오래된 순(1, 2, 3...) 정렬
-      });
+  // 해당 아동·월의 종합 평가 (월별 1건)
+  const existingReport = useMemo(() => {
+    if (!reportChildId || !reportMonth) return null;
+    return monthlyReports.find(
+      r => r.childId === reportChildId && r.reportMonth === reportMonth
+    ) ?? null;
   }, [monthlyReports, reportChildId, reportMonth]);
 
   const domainCounts = useMemo(() => {
@@ -66,11 +63,11 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
     
     setIsGenerating(true);
     try {
-      // 인위적인 지연 (분석 효과)
       await new Promise(r => setTimeout(r, 800));
 
+      // 기존 평가가 있으면 그 id를 계승하여 Upsert 가 가능하게 함
       const newReport: MonthlyReport = {
-        id: `rep-${Date.now()}`,
+        id: existingReport?.id ?? `rep-${Date.now()}`,
         childId: reportChildId,
         childName: selectedChild.name,
         reportMonth: reportMonth,
@@ -177,38 +174,41 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
 
         {reportChildId && reportMonth && (
           <div className="w-full border-t border-slate-100 pt-8 flex flex-col items-center">
-             {existingReports.length > 0 && (
+             {existingReport && (
                <div className="w-full mb-10">
                  <div className="flex items-center justify-between mb-4 px-1">
                    <h3 className="text-sm font-black text-slate-500 uppercase tracking-wider">작성된 종합 평가</h3>
-                   <span className="bg-blue-100 text-blue-600 px-2.5 py-1 rounded-full text-[10px] font-black">{existingReports.length}건</span>
+                   <span className="text-[10px] font-bold text-slate-400">
+                     {existingReport.updatedAt
+                       ? `최근 수정: ${existingReport.updatedAt.split('T')[0]}`
+                       : existingReport.createdAt
+                         ? `작성일: ${existingReport.createdAt.split('T')[0]}`
+                         : '날짜 정보 없음'}
+                   </span>
                  </div>
-                 <div className="space-y-3">
-                   {existingReports.map((r, index) => (
-                     <div 
-                      key={r.id} 
-                      onClick={() => handleEditExisting(r)}
-                      className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex items-center justify-between group hover:border-blue-200 hover:bg-blue-50/30 transition-all cursor-pointer"
-                     >
-                       <div className="flex flex-col flex-1">
-                         <span className="text-sm font-bold text-slate-700">{index + 1}. {selectedChild?.name}의 {selectedMonthNum}월 종합 평가</span>
-                         <span className="text-[10px] text-slate-400 font-medium">
-                           {r.updatedAt ? `최근 수정: ${r.updatedAt.split('T')[0]}` : `작성일: ${r.createdAt?.split('T')[0] || '날짜 정보 없음'}`}
-                         </span>
-                       </div>
-                       <div className="flex items-center gap-3 ml-4">
-                         <div className="text-slate-300 group-hover:text-blue-400 transition-colors">
-                           <Edit2 size={14} />
-                         </div>
-                         <button 
-                           onClick={(e) => handleDelete(e, r.id)}
-                           className="w-10 h-10 flex items-center justify-center bg-rose-50/50 border border-rose-100 rounded-xl text-rose-500 hover:bg-rose-100 hover:text-rose-600 transition-all shadow-sm active:scale-95 disabled:opacity-50"
-                         >
-                           <Trash2 size={16} />
-                         </button>
-                       </div>
+                 <div
+                   onClick={() => handleEditExisting(existingReport)}
+                   className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex items-center justify-between group hover:border-blue-200 hover:bg-blue-50/30 transition-all cursor-pointer"
+                 >
+                   <div className="flex flex-col flex-1">
+                     <span className="text-sm font-bold text-slate-700">
+                       {selectedChild?.name}의 {selectedMonthNum}월 종합 평가
+                     </span>
+                     <span className="text-[10px] text-slate-400 font-medium mt-0.5">
+                       클릭하여 확인 및 수정
+                     </span>
+                   </div>
+                   <div className="flex items-center gap-3 ml-4">
+                     <div className="text-slate-300 group-hover:text-blue-400 transition-colors">
+                       <Edit2 size={14} />
                      </div>
-                   ))}
+                     <button
+                       onClick={(e) => handleDelete(e, existingReport.id)}
+                       className="w-10 h-10 flex items-center justify-center bg-rose-50/50 border border-rose-100 rounded-xl text-rose-500 hover:bg-rose-100 hover:text-rose-600 transition-all shadow-sm active:scale-95"
+                     >
+                       <Trash2 size={16} />
+                     </button>
+                   </div>
                  </div>
                </div>
              )}

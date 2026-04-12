@@ -460,23 +460,21 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
     try {
       const res = await monthlyReportAPI.save(report);
       if (res.success && res.id) {
-        // 백엔드에서 온 createdAt이 없으면 현재 시간으로 보정
         const now = new Date().toISOString();
-        const savedReport: MonthlyReport = { 
-          ...report, 
-          id: res.id, 
+        const savedReport: MonthlyReport = {
+          ...report,
+          id: res.id,
           isSaved: true,
           createdAt: res.createdAt || report.createdAt || now,
           updatedAt: res.updatedAt || now
         };
         setMonthlyReports((prev) => {
-          const existingIndex = prev.findIndex(r => r.id === report.id || r.id === res.id);
-          if (existingIndex >= 0) {
-            const newReports = [...prev];
-            newReports[existingIndex] = savedReport;
-            return newReports;
-          }
-          return [...prev, savedReport]; // 새 보고서는 뒤에 추가 (나중에 정렬됨)
+          // 기존 id 일치 또는 같은 childId+reportMonth 가 있으면 교체 (Upsert 대응)
+          const filtered = prev.filter(
+            r => r.id !== report.id && r.id !== res.id &&
+                 !(r.childId === report.childId && r.reportMonth === report.reportMonth)
+          );
+          return [...filtered, savedReport];
         });
       }
     } catch (error) {
@@ -517,15 +515,6 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
       const res = await monthlyReportAPI.save({ ...report, isSent: true });
       if (!res.success) throw new Error('보고서 상태 업데이트에 실패했습니다.');
 
-      // 2. 알림장 시스템을 사용하여 부모에게 통지 발송
-      await noticeAPI.create({
-        type: 'individual',
-        childId: report.childId,
-        title: `${report.childName} 유아 ${report.reportMonth} 관찰일지`,
-        content: `${report.childName} 유아의 ${report.reportMonth} 관찰일지가 도착했습니다. 상세 내용은 성장기록 메뉴에서 확인하실 수 있습니다.`,
-        date: formatDateISO(),
-        isRead: false
-      });
 
       // 3. 로컬 상태 업데이트
       setMonthlyReports(prev => prev.map(r => r.id === report.id || (res.id && r.id === res.id) ? { ...r, isSent: true, isSaved: true } : r));
