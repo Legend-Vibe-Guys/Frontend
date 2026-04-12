@@ -156,16 +156,23 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
 
           if (observationRes && observationRes.success) {
             // 서버의 필드명(observationContent 등)을 UI 필드명(content 등)으로 매핑
-            const mappedObservations: ObservationLog[] = observationRes.observations.map((obs: ObservationRecord) => ({
-              id: obs.id || `obs-${Date.now()}-${Math.random()}`,
-              childId: obs.childId,
-              childName: obs.childName,
-              date: obs.date,
-              content: obs.content || obs.observationContent || '',
-              evaluation: obs.evaluation || obs.observationEvaluation || '',
-              categories: obs.categories || [{ name: obs.category || '기타', analysis: '' }],
-              isAIGenerated: obs.isAIGenerated || false,
-            }));
+            const mappedObservations: ObservationLog[] = observationRes.observations.map((obs: ObservationRecord) => {
+              // 다양한 필드명 대응 (백엔드 버전에 따른 차이 보완)
+              const content = obs.content || obs.observationContent || obs.memo || obs.rawMemo || '';
+              const evaluation = obs.evaluation || obs.observationEvaluation || '';
+              const date = obs.date || (obs.createdAt ? obs.createdAt.split('T')[0] : formatDateISO());
+
+              return {
+                id: obs.id || `obs-${Date.now()}-${Math.random()}`,
+                childId: obs.childId,
+                childName: obs.childName,
+                date,
+                content,
+                evaluation,
+                categories: obs.categories || [{ name: obs.category || '기타', analysis: '' }],
+                isAIGenerated: obs.isAIGenerated || false,
+              };
+            });
             setObservations(mappedObservations);
           }
 
@@ -498,15 +505,23 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
 
   const sendMonthlyReportToParent = useCallback(async (report: MonthlyReport) => {
     try {
-      // 알림장 시스템을 사용하여 전송
+      // 1. 보고서 데이터 상태 업데이트 (공식적으로 부모에게 노출되도록 설정)
+      const res = await monthlyReportAPI.save({ ...report, isSent: true });
+      if (!res.success) throw new Error('보고서 상태 업데이트에 실패했습니다.');
+
+      // 2. 알림장 시스템을 사용하여 부모에게 통지 발송
       await noticeAPI.create({
         type: 'individual',
         childId: report.childId,
-        title: `${report.childName} 유아 ${report.reportMonth} 종합 평가서`,
-        content: `${report.childName} 유아의 ${report.reportMonth} 종합 평가서가 도착했습니다. 상세 내용은 관찰 메뉴에서 확인하실 수 있습니다.`,
+        title: `${report.childName} 유아 ${report.reportMonth} 관찰일지`,
+        content: `${report.childName} 유아의 ${report.reportMonth} 관찰일지가 도착했습니다. 상세 내용은 성장기록 메뉴에서 확인하실 수 있습니다.`,
         date: formatDateISO(),
         isRead: false
       });
+
+      // 3. 로컬 상태 업데이트
+      setMonthlyReports(prev => prev.map(r => r.id === report.id || (res.id && r.id === res.id) ? { ...r, isSent: true, isSaved: true } : r));
+
       alert('부모님께 평가서 전송이 완료되었습니다.');
     } catch (error) {
       console.error("Failed to send report to parent", error);
