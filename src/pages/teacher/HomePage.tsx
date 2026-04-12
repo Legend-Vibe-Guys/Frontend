@@ -106,7 +106,7 @@ export default function HomePage() {
 
           <div className="relative z-10 mb-8 pt-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-[30px] font-gmarket font-bold text-white drop-shadow-sm leading-none pt-1">
+              <h3 className="text-[34px] font-jua font-normal tracking-wide text-white drop-shadow-sm leading-none pt-1">
                 {hasClassName ? user!.className : '우리 반'}
               </h3>
               <div className="px-3 py-1.5 bg-white/10 backdrop-blur-sm border border-white/40 rounded-xl">

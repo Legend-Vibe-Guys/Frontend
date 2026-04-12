@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAppData } from '../../hooks';
-import { Bell, ChevronDown, Megaphone, ClipboardList, Camera } from 'lucide-react';
+import { Bell, ChevronDown, Megaphone, ClipboardList, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 import { API_BASE } from '../../api/api';
 import ImageViewer from '../../components/common/ImageViewer';
 
@@ -16,6 +16,8 @@ export default function ParentNoticePage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [viewerImages, setViewerImages] = useState<string[]>([]);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 7;
 
 
   const commonNotices = notices.filter((n) => n.type === 'common');
@@ -27,6 +29,18 @@ export default function ParentNoticePage() {
     if (a.date !== b.date) return b.date.localeCompare(a.date);
     return b.id.localeCompare(a.id);
   });
+
+  const totalPages = Math.ceil(currentList.length / ITEMS_PER_PAGE);
+  const displayedList = currentList.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const handleTabChange = (newTab: 'common' | 'individual') => {
+    setTab(newTab);
+    setCurrentPage(1);
+    setExpandedId(null);
+  };
 
   return (
     <div className="min-h-screen p-6 pb-32 animate-fade-in relative z-10">
@@ -42,13 +56,13 @@ export default function ParentNoticePage() {
       <div className="flex gap-2 mb-8 bg-white/40 backdrop-blur-md p-1.5 rounded-[1.8rem] border border-white/50 shadow-sm">
         <button 
           className={`flex-1 flex gap-2 items-center justify-center py-4 rounded-[1.5rem] text-[13px] font-black transition-all duration-300 ${tab === 'common' ? 'bg-white text-orange-600 shadow-md ring-1 ring-orange-50' : 'text-slate-400'}`} 
-          onClick={() => setTab('common')}
+          onClick={() => handleTabChange('common')}
         >
           <Megaphone size={16} /> 우리 반 소식
         </button>
         <button 
           className={`flex-1 flex gap-2 items-center justify-center py-4 rounded-[1.5rem] text-[13px] font-black transition-all duration-300 ${tab === 'individual' ? 'bg-white text-amber-600 shadow-md ring-1 ring-amber-50' : 'text-slate-400'}`} 
-          onClick={() => setTab('individual')}
+          onClick={() => handleTabChange('individual')}
         >
           <Bell size={16} /> 개별 알림장
         </button>
@@ -56,17 +70,18 @@ export default function ParentNoticePage() {
 
       {/* Content List */}
       <div className="space-y-4">
-        {currentList.length === 0 ? (
+        {displayedList.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 opacity-40">
             <ClipboardList size={48} className="mb-4 text-slate-400" />
             <p className="text-sm font-bold text-slate-500">아직 도착한 알림장이 없어요.</p>
           </div>
         ) : (
-          currentList.map((notice) => (
+          displayedList.map((notice) => (
             <div 
               key={notice.id} 
               className={`bg-white/70 backdrop-blur-lg rounded-[2.2rem] overflow-hidden transition-all duration-300 border ${expandedId === notice.id ? 'border-orange-200 shadow-lg' : 'border-white/60 shadow-sm'}`}
             >
+              {/* 리스트 아이템 내용 동일 */}
               <div 
                 className="p-5 cursor-pointer flex items-start justify-between gap-4" 
                 onClick={() => {
@@ -128,6 +143,43 @@ export default function ParentNoticePage() {
           ))
         )}
       </div>
+
+      {/* Pagination UI */}
+      {totalPages > 1 && (
+        <div className="mt-10 flex items-center justify-center gap-3 bg-white/40 backdrop-blur-md p-2 rounded-[2rem] border border-white/50 shadow-sm w-fit mx-auto">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="w-10 h-10 flex items-center justify-center rounded-full text-slate-400 disabled:opacity-20 hover:bg-orange-50 hover:text-orange-500 transition-all"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentPage(i + 1)}
+                className={`w-10 h-10 flex items-center justify-center rounded-full text-sm font-black transition-all ${
+                  currentPage === i + 1 
+                    ? 'bg-orange-500 text-white shadow-lg shadow-orange-200' 
+                    : 'text-slate-400 hover:bg-white hover:text-slate-600'
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            className="w-10 h-10 flex items-center justify-center rounded-full text-slate-400 disabled:opacity-20 hover:bg-orange-50 hover:text-orange-500 transition-all"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      )}
 
       {viewerImages.length > 0 && (
         <ImageViewer 
