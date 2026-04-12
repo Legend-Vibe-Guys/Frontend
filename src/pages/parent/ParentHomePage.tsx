@@ -64,9 +64,6 @@ export default function ParentHomePage() {
             {user?.name}님! <span className="inline-block">👋</span>
           </h2>
         </div>
-        <div className="w-12 h-12 bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-white/50 flex items-center justify-center text-xl">
-          🎁
-        </div>
       </div>
 
       {/* Main Child Card */}
