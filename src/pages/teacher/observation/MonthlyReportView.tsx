@@ -157,10 +157,10 @@ export function MonthlyReportView({ children, observations }: MonthlyReportViewP
           />
           <div className="flex flex-col">
             <label className="text-[11px] font-black text-slate-400 uppercase mb-3 tracking-widest px-1">📅 평가 기준 월 설정</label>
-            <div className="relative min-w-0">
+            <div className="relative w-full overflow-hidden">
               <input 
                 type="month" 
-                className="bg-white border border-slate-200 rounded-2xl px-4 py-4 font-bold text-left outline-none w-full focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50/50 transition-all text-slate-700 shadow-sm box-border" 
+                className="bg-white border border-slate-200 rounded-2xl px-4 py-4 font-bold text-left outline-none w-full min-w-0 max-w-full focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50/50 transition-all text-slate-700 shadow-sm box-border" 
                 value={reportMonth} 
                 onChange={(e) => { setReportMonth(e.target.value); setReport(null); setPickedEntries({}); }} 
               />

@@ -132,10 +132,10 @@ export function ObservationArchive({
             <label className="text-[11px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">
               📅 작성 월
             </label>
-            <div className="relative group min-w-0">
+            <div className="relative w-full overflow-hidden">
               <input
                 type="month"
-                className="bg-white border border-slate-200 rounded-2xl px-4 py-4 font-bold text-base outline-none w-full focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50/50 transition-all text-slate-700 shadow-sm box-border"
+                className="bg-white border border-slate-200 rounded-2xl px-4 py-4 font-bold text-base outline-none w-full min-w-0 max-w-full focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50/50 transition-all text-slate-700 shadow-sm box-border"
                 value={filterMonth}
                 onChange={(e) => setFilterMonth(e.target.value)}
               />
