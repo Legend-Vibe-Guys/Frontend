@@ -103,7 +103,22 @@ export function ObservationArchive({
   ];
 
   const filteredObservations = observations.filter((obs) => {
-    const matchMonth = filterMonth ? obs.date.startsWith(filterMonth) : true;
+    if (!obs.date) return false;
+    
+    // 날짜 매칭 로직 유연화 (YYYY-MM-DD, YYYY.MM.DD, YYYY-M-D 등 대응)
+    let matchMonth = true;
+    if (filterMonth) {
+      const [fYear, fMonth] = filterMonth.split('-');
+      const dateParts = obs.date.split(/[-./]/);
+      if (dateParts.length >= 2) {
+        const obsYear = dateParts[0];
+        const obsMonth = dateParts[1].padStart(2, '0');
+        matchMonth = (obsYear === fYear && obsMonth === fMonth);
+      } else {
+        matchMonth = obs.date.startsWith(filterMonth);
+      }
+    }
+
     const matchChild = filterChild ? obs.childId === filterChild : true;
     const matchDomain = filterDomain ? obs.categories.some((c) => c.name === filterDomain) : true;
     return matchMonth && matchChild && matchDomain;
@@ -117,10 +132,10 @@ export function ObservationArchive({
             <label className="text-[11px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">
               📅 작성 월
             </label>
-            <div className="relative group min-w-0">
+            <div className="relative w-full overflow-hidden">
               <input
                 type="month"
-                className="bg-white border border-slate-200 rounded-2xl px-4 py-4 font-bold text-base outline-none w-full focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50/50 transition-all text-slate-700 shadow-sm box-border"
+                className="bg-white border border-slate-200 rounded-2xl px-4 py-4 font-bold text-base outline-none w-full min-w-0 max-w-full focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50/50 transition-all text-slate-700 shadow-sm box-border"
                 value={filterMonth}
                 onChange={(e) => setFilterMonth(e.target.value)}
               />
@@ -283,8 +298,9 @@ export function ObservationArchive({
             );
           })
         ) : (
-          <div className="py-20 text-center text-slate-400 font-bold bg-white rounded-[2rem] border-2 border-dashed border-slate-100">
-            기록 데이터가 없습니다.
+          <div className="py-20 text-center bg-white rounded-[2rem] border-2 border-dashed border-slate-100 flex flex-col items-center gap-3">
+            <p className="text-slate-400 font-bold text-lg">기록 데이터가 없습니다.</p>
+            <p className="text-slate-300 text-sm font-medium">상단의 '작성 월' 필터나 아동 선택을 확인해보세요.</p>
           </div>
         )}
       </div>

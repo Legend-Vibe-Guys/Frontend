@@ -131,6 +131,7 @@ export interface ObservationRecord {
   evaluation?: string;  // UI용 매핑 필드
   categories?: ObservationCategory[]; // 매핑용 필드
   isAIGenerated?: boolean;            // 매핑용 필드
+  rawMemo?: string;                   // 원문 메모 필드 추가
 }
 
 export interface ObservationCategory {
@@ -152,6 +153,7 @@ export interface MonthlyReport {
   reportMonth: string;
   details: Record<string, DomainDetail>;
   isSaved: boolean;
+  isSent?: boolean;      // 부모 전송 여부 추가
   createdAt?: string;
   updatedAt?: string;
 }

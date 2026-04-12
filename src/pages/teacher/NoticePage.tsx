@@ -866,6 +866,36 @@ export default function NoticePage() {
                           <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-line bg-slate-50 p-3 rounded-xl mt-2">
                             {n.content}
                           </p>
+                          {/* 개별 알림장 사진 표시 추가 */}
+                          {((n.photoUrls && n.photoUrls.length > 0) ||
+                            (n.photoUrl && n.photoUrl !== 'string' && n.photoUrl !== '')) && (
+                            <div className="flex gap-2 overflow-x-auto mt-3 pb-2 scrollbar-hide">
+                              {(n.photoUrls && n.photoUrls.length > 0 ? n.photoUrls : [n.photoUrl!]).map(
+                                (photo, index, arr) => (
+                                  <div
+                                    key={index}
+                                    className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-slate-100 cursor-zoom-in group/img"
+                                    onClick={() => {
+                                      setViewerImages(arr.map((p) => getFullImageUrl(p)));
+                                      setViewerIndex(index);
+                                    }}
+                                  >
+                                    <img
+                                      src={getFullImageUrl(photo)}
+                                      alt={`Attached ${index}`}
+                                      className="w-full h-full object-cover transition-transform group-hover/img:scale-110"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).parentElement?.style.setProperty(
+                                          'display',
+                                          'none',
+                                        );
+                                      }}
+                                    />
+                                  </div>
+                                ),
+                              )}
+                            </div>
+                          )}
                         </div>
                       ))
                   ) : (
