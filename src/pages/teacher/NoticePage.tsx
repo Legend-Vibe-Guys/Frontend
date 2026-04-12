@@ -16,6 +16,9 @@ import {
   Trash2,
   Megaphone,
   PenLine,
+  ChevronLeft,
+  ChevronRight,
+  ArrowLeft,
 } from 'lucide-react';
 import { StatusDashboard } from '../../components/teacher/StatusDashboard';
 import { ChildListGrid } from '../../components/teacher/ChildListGrid';
@@ -108,6 +111,17 @@ export default function NoticePage() {
   const [memos, setMemos] = useState<Record<string, string>>({});
   const [drafts, setDrafts] = useState<Record<string, Notice>>({});
   const [isGenerating, setIsGenerating] = useState(false);
+  
+  // Pagination State
+  const [commonPage, setCommonPage] = useState(1);
+  const [individualPage, setIndividualPage] = useState(1);
+  const PAGE_SIZE = 5;
+
+  // Reset page when tab or child selection changes
+  useEffect(() => {
+    setCommonPage(1);
+    setIndividualPage(1);
+  }, [activeTab, selectedChildId]);
 
   const allChildren = children; // 모든 원아 표시 요구사항 반영
   const commonNotices = notices
@@ -503,11 +517,14 @@ export default function NoticePage() {
             <h4 className="text-sm font-bold text-slate-600 mb-3 ml-2">발송 내역</h4>
             <div className="flex flex-col gap-3">
               {commonNotices.length > 0 ? (
-                commonNotices.map((n) => (
-                  <div
-                    key={n.id}
-                    className="p-4 bg-white border border-slate-200 rounded-2xl group relative overflow-hidden"
-                  >
+                <>
+                  {commonNotices
+                    .slice((commonPage - 1) * PAGE_SIZE, commonPage * PAGE_SIZE)
+                    .map((n) => (
+                      <div
+                        key={n.id}
+                        className="p-4 bg-white border border-slate-200 rounded-2xl group relative overflow-hidden"
+                      >
                     <div className="absolute top-0 right-0 p-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => navigate(PATH.TEACHER.NOTICE_EDIT.replace(':id', n.id))}
@@ -524,7 +541,11 @@ export default function NoticePage() {
                         <Trash2 size={14} />
                       </button>
                     </div>
-                    <p className="text-[10px] text-slate-400 mb-1">{n.date}</p>
+                    <div className="mb-2">
+                      <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-500 text-[10px] font-bold rounded-md border border-blue-100/50 shadow-sm">
+                        {n.date}
+                      </span>
+                    </div>
                     <div className="flex justify-between items-start mb-2">
                       <p className="font-bold text-sm text-slate-800">{n.title}</p>
                     </div>
@@ -562,7 +583,31 @@ export default function NoticePage() {
                       </div>
                     )}
                   </div>
-                ))
+                ))}
+                
+                {/* Common Pagination Controls */}
+                {commonNotices.length > PAGE_SIZE && (
+                  <div className="flex items-center justify-center gap-4 mt-6 py-2">
+                    <button
+                      onClick={() => setCommonPage(prev => Math.max(1, prev - 1))}
+                      disabled={commonPage === 1}
+                      className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed hover:text-blue-600 transition-colors"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <span className="text-xs font-bold text-slate-500">
+                      {commonPage} / {Math.ceil(commonNotices.length / PAGE_SIZE)}
+                    </span>
+                    <button
+                      onClick={() => setCommonPage(prev => Math.min(Math.ceil(commonNotices.length / PAGE_SIZE), prev + 1))}
+                      disabled={commonPage === Math.ceil(commonNotices.length / PAGE_SIZE)}
+                      className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed hover:text-blue-600 transition-colors"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                )}
+                </>
               ) : (
                 <div className="text-center text-xs text-slate-400 py-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                   발송 내역이 없습니다.
@@ -600,8 +645,8 @@ export default function NoticePage() {
           ) : (
             <div className="animate-fade-in">
               {/* Selected Child Header */}
-              <div className="flex items-center justify-between mb-6 bg-blue-50/50 p-3 rounded-2xl border border-blue-100">
-                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mr-4 shadow-sm overflow-hidden border border-blue-200">
+              <div className="flex items-center justify-between mb-6 bg-blue-50/50 p-3 rounded-2xl border border-blue-300">
+                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mr-4 shadow-sm overflow-hidden border border-blue-300">
                   {(() => {
                     const selChild = allChildren.find(c => c.id === selectedChildId);
                     if (!selChild) return null;
@@ -620,15 +665,12 @@ export default function NoticePage() {
                   <h2 className="font-black text-blue-900">
                     {allChildren.find((c) => c.id === selectedChildId)?.name || '아이'} 알림장 작성
                   </h2>
-                  <p className="text-xs text-blue-400 font-bold uppercase tracking-wider">
-                    Individual Notice
-                  </p>
                 </div>
                 <button
                   className="w-8 h-8 flex items-center justify-center bg-white rounded-full text-slate-400 hover:text-slate-600 shadow-sm"
                   onClick={() => setSelectedChildId(null)}
                 >
-                  <X size={16} />
+                  <ArrowLeft size={18} />
                 </button>
               </div>
 
@@ -648,8 +690,6 @@ export default function NoticePage() {
               {/* Draft Generation Panel */}
               {!drafts[selectedChildId] || isGenerating ? (
                 <div className="bg-white border border-slate-100 shadow-sm rounded-3xl p-5 mb-4 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500"></div>
-
                   <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
                     특이사항 간단 메모
                   </label>
@@ -667,14 +707,14 @@ export default function NoticePage() {
                     <span className="text-[11px] font-bold text-slate-500">알림장 길이</span>
                     <div className="flex gap-2">
                       <button
-                        className={`text-xs px-4 py-1.5 rounded-full font-bold transition-all ${memoLength === 'short' ? 'bg-slate-800 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                        className={`text-xs px-4 py-1.5 rounded-full font-bold transition-all ${memoLength === 'short' ? 'bg-blue-600 text-white shadow-md' : 'bg-blue-50 text-blue-400 hover:bg-blue-100'}`}
                         onClick={() => setMemoLength('short')}
                         disabled={isGenerating}
                       >
                         단문 요약
                       </button>
                       <button
-                        className={`text-xs px-4 py-1.5 rounded-full font-bold transition-all ${memoLength === 'long' ? 'bg-slate-800 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                        className={`text-xs px-4 py-1.5 rounded-full font-bold transition-all ${memoLength === 'long' ? 'bg-blue-600 text-white shadow-md' : 'bg-blue-50 text-blue-400 hover:bg-blue-100'}`}
                         onClick={() => setMemoLength('long')}
                         disabled={isGenerating}
                       >
@@ -685,18 +725,14 @@ export default function NoticePage() {
 
                   <div className="flex gap-2">
                     <button
-                      className="flex-[2] py-3.5 bg-slate-800 text-white font-black rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm"
+                      className="flex-[2] py-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center shadow-lg shadow-blue-100 disabled:opacity-40"
                       onClick={() => handleGenerateDraft(selectedChildId)}
-                      disabled={isGenerating}
+                      disabled={isGenerating || !memos[selectedChildId]?.trim()}
                     >
-                      {isGenerating ? (
-                        <span className="animate-pulse">초안 작성 중...</span>
-                      ) : (
-                        <>AI 초안 만들기</>
-                      )}
+                      {isGenerating ? "초안 작성 중..." : "AI 초안 만들기"}
                     </button>
                     <button
-                      className="flex-1 py-3.5 bg-white border-2 border-slate-800 text-slate-800 font-bold rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm"
+                      className="flex-1 py-4 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center shadow-md shadow-slate-100 disabled:opacity-40"
                       onClick={() => handleSendManualIndividual(selectedChildId)}
                       disabled={isGenerating || !memos[selectedChildId]?.trim()}
                     >
@@ -705,33 +741,33 @@ export default function NoticePage() {
                   </div>
 
                   {/* Manual Photos Upload */}
-                  <div className="mt-4 pt-4 border-t border-slate-50">
-                    <label className="block text-[11px] font-bold text-slate-400 mb-2 ml-1">
-                      사진 첨부
+                  <div className="mt-6 pt-6 border-t border-slate-50">
+                    <label className="block text-xs font-bold text-slate-500 mb-3 ml-1">
+                      사진 첨부 (최대 10장)
                     </label>
                     {individualPhotos.length > 0 && (
-                      <div className="flex gap-2 overflow-x-auto pt-2 pb-2 scrollbar-hide mb-2">
+                      <div className="flex gap-3 overflow-x-auto pt-2 pb-2 scrollbar-hide mb-3">
                         {individualPhotos.map((photo, index) => (
-                          <div key={index} className="relative flex-shrink-0 w-16 h-16 group">
+                          <div key={index} className="relative flex-shrink-0 w-24 h-24 group">
                             <img
                               src={photo}
                               alt=""
-                              className="w-full h-full object-cover rounded-lg border border-slate-100"
+                              className="w-full h-full object-cover rounded-xl border border-slate-200"
                             />
                             <button
                               onClick={(e) => {
                                 e.preventDefault();
                                 removeIndividualPhoto(index);
                               }}
-                              className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center shadow hover:bg-red-600 transition-colors"
+                              className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
                             >
-                              <X size={10} />
+                              <X size={14} />
                             </button>
                           </div>
                         ))}
                       </div>
                     )}
-                    <label className="flex items-center justify-center gap-2 w-full h-12 border border-dashed border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-all text-slate-400">
+                    <label className="flex items-center justify-center gap-2 w-full h-24 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-50 transition-all font-semibold relative overflow-hidden">
                       <input
                         type="file"
                         className="hidden"
@@ -739,8 +775,10 @@ export default function NoticePage() {
                         multiple
                         onChange={handleIndividualPhotoUpload}
                       />
-                      <ImageIcon size={14} />
-                      <span className="text-[10px] font-bold">사진 선택</span>
+                      <div className="flex flex-col items-center gap-1 text-slate-400">
+                        <ImageIcon size={24} />
+                        <span className="text-xs">사진 추가 (다중 선택 가능)</span>
+                      </div>
                     </label>
                   </div>
                 </div>
@@ -766,33 +804,33 @@ export default function NoticePage() {
                   />
 
                   {/* Individual Photos Upload in Draft Panel */}
-                  <div className="space-y-3 mb-4">
-                    <label className="block text-[11px] font-bold text-slate-500 ml-1">
-                      사진 추가
+                  <div className="space-y-3 mb-6">
+                    <label className="block text-xs font-bold text-slate-500 ml-1">
+                      사진 추가 (최대 10장)
                     </label>
                     {individualPhotos.length > 0 && (
-                      <div className="flex gap-2 overflow-x-auto pt-2 pb-2 scrollbar-hide">
+                      <div className="flex gap-3 overflow-x-auto pt-2 pb-2 scrollbar-hide">
                         {individualPhotos.map((photo, index) => (
-                          <div key={index} className="relative flex-shrink-0 w-20 h-20 group">
+                          <div key={index} className="relative flex-shrink-0 w-24 h-24 group">
                             <img
                               src={photo}
                               alt={`Preview ${index}`}
-                              className="w-full h-full object-cover rounded-xl border border-slate-100"
+                              className="w-full h-full object-cover rounded-xl border border-slate-200"
                             />
                             <button
                               onClick={(e) => {
                                 e.preventDefault();
                                 removeIndividualPhoto(index);
                               }}
-                              className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-600 transition-colors"
+                              className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
                             >
-                              <X size={12} />
+                              <X size={14} />
                             </button>
                           </div>
                         ))}
                       </div>
                     )}
-                    <label className="flex items-center justify-center gap-2 w-full h-20 border-2 border-dashed border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50 transition-all relative overflow-hidden">
+                    <label className="flex items-center justify-center gap-2 w-full h-24 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-50 transition-all font-semibold relative overflow-hidden">
                       <input
                         type="file"
                         className="hidden"
@@ -800,19 +838,18 @@ export default function NoticePage() {
                         multiple
                         onChange={handleIndividualPhotoUpload}
                       />
-                      <div className="flex flex-col items-center gap-0.5 text-slate-400">
-                        <ImageIcon size={18} />
-                        <span className="text-[10px] font-bold">사진 추가</span>
+                      <div className="flex flex-col items-center gap-1 text-slate-400">
+                        <ImageIcon size={24} />
+                        <span className="text-xs">사진 추가 (다중 선택 가능)</span>
                       </div>
                     </label>
                   </div>
 
                   <button
-                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                    style={{ boxShadow: '0 4px 14px rgba(37,99,235,0.25)' }}
+                    className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center shadow-lg shadow-blue-100"
                     onClick={() => handleSendIndividual(selectedChildId)}
                   >
-                    <Send size={18} /> 해당 학부모님께 발송
+                    해당 학부모님께 발송
                   </button>
                 </div>
               )}
@@ -825,13 +862,15 @@ export default function NoticePage() {
                 </h4>
                 <div className="flex flex-col gap-3">
                   {individualNotices.filter((n) => n.childId === selectedChildId).length > 0 ? (
-                    individualNotices
-                      .filter((n) => n.childId === selectedChildId)
-                      .map((n) => (
-                        <div
-                          key={n.id}
-                          className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm group relative overflow-hidden"
-                        >
+                    <>
+                      {individualNotices
+                        .filter((n) => n.childId === selectedChildId)
+                        .slice((individualPage - 1) * PAGE_SIZE, individualPage * PAGE_SIZE)
+                        .map((n) => (
+                          <div
+                            key={n.id}
+                            className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm group relative overflow-hidden"
+                          >
                           <div className="absolute top-0 right-0 p-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() =>
@@ -851,7 +890,9 @@ export default function NoticePage() {
                             </button>
                           </div>
                           <div className="flex justify-between items-start mb-2">
-                            <p className="font-bold text-[11px] text-blue-600">{n.date}</p>
+                            <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-500 text-[10px] font-bold rounded-md border border-blue-100/50 shadow-sm">
+                              {n.date}
+                            </span>
                             {n.type !== 'common' &&
                               (n.isRead ? (
                                 <p className="text-[10px] text-slate-400 font-bold px-2 py-0.5 bg-slate-100 rounded-md">
@@ -896,8 +937,32 @@ export default function NoticePage() {
                               )}
                             </div>
                           )}
+                          </div>
+                        ))}
+                        
+                      {/* Individual Pagination Controls */}
+                      {individualNotices.filter((n) => n.childId === selectedChildId).length > PAGE_SIZE && (
+                        <div className="flex items-center justify-center gap-4 mt-6 py-2">
+                          <button
+                            onClick={() => setIndividualPage(prev => Math.max(1, prev - 1))}
+                            disabled={individualPage === 1}
+                            className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-400 disabled:opacity-40 disabled:cursor-not-allowed hover:text-blue-600 transition-colors"
+                          >
+                            <ChevronLeft size={16} />
+                          </button>
+                          <span className="text-xs font-bold text-slate-500">
+                            {individualPage} / {Math.ceil(individualNotices.filter((n) => n.childId === selectedChildId).length / PAGE_SIZE)}
+                          </span>
+                          <button
+                            onClick={() => setIndividualPage(prev => Math.min(Math.ceil(individualNotices.filter((n) => n.childId === selectedChildId).length / PAGE_SIZE), prev + 1))}
+                            disabled={individualPage === Math.ceil(individualNotices.filter((n) => n.childId === selectedChildId).length / PAGE_SIZE)}
+                            className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-400 disabled:opacity-40 disabled:cursor-not-allowed hover:text-blue-600 transition-colors"
+                          >
+                            <ChevronRight size={16} />
+                          </button>
                         </div>
-                      ))
+                      )}
+                    </>
                   ) : (
                     <div className="text-center text-xs text-slate-400 py-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                       최근 알림장 내역이 없습니다.
