@@ -29,7 +29,7 @@ export default function Header() {
               <path d="M5 21h14"/>
             </svg>
           </div>
-          <h1 className="text-[17px] font-black text-slate-900 tracking-tight">키즈노트</h1>
+          <h1 className="text-[17px] font-black text-slate-900 tracking-tight">아이노트</h1>
         </div>
         <div className="flex items-center gap-1">
           <button className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 transition-all relative">

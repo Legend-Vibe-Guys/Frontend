@@ -49,7 +49,7 @@ export default function LoginPage() {
           </svg>
         </div>
         <h1 className="text-4xl font-black text-slate-800 tracking-tight mb-3">
-          키즈노트
+          아이노트
         </h1>
         <p className="text-[15px] font-bold text-slate-500 text-center leading-relaxed whitespace-pre-wrap">
           {"선생님의 퇴근을 지켜주는\n스마트 행정 자동화 솔루션"}
@@ -86,7 +86,7 @@ export default function LoginPage() {
         </button>
 
         <p className="text-[11.5px] text-slate-400 text-center whitespace-nowrap px-2">
-          {"로그인 시 키즈노트의 "}
+          {"로그인 시 아이노트의 "}
           <span className="underline cursor-pointer">이용약관</span>
           {" 및 "}
           <span className="underline cursor-pointer">개인정보처리방침</span>
