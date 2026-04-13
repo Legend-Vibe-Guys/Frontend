@@ -1,11 +1,18 @@
 import { useState } from 'react';
 import { useAuth } from '../../hooks';
-import { Bell, LogOut, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Bell, LogOut, CheckCircle2, AlertCircle, MessageSquare, Clipboard, Calendar, Edit3 } from 'lucide-react';
+import { useNotifications } from '../../hooks/useNotifications';
+import { useNavigate } from 'react-router-dom';
+import { formatNotificationTime } from '../../utils/date';
+import type { AppNotification } from '../../types';
 
 export default function Header() {
   const { user, logout } = useAuth();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogoutConfirm = () => {
     setIsLogoutModalOpen(false);
@@ -13,6 +20,26 @@ export default function Header() {
     setTimeout(() => {
       logout();
     }, 1500); // 1.5초 후 실제 로그아웃 처리 및 리다이렉트
+  };
+
+  const handleNotifClick = async (notif: AppNotification) => {
+    if (!notif.isRead) {
+      await markAsRead(notif.id);
+    }
+    setIsNotifOpen(false);
+    navigate(notif.link);
+  };
+
+  const getNotifIcon = (type: AppNotification['type']) => {
+    switch (type) {
+      case 'comment': return <MessageSquare size={16} className="text-blue-500" />;
+      case 'notice': return <Clipboard size={16} className="text-orange-500" />;
+      case 'observation': return <Edit3 size={16} className="text-purple-500" />;
+      case 'schedule': return <Calendar size={16} className="text-green-500" />;
+      case 'class_update': return <CheckCircle2 size={16} className="text-indigo-500" />;
+      case 'health_update': return <AlertCircle size={16} className="text-red-500" />;
+      default: return <Bell size={16} className="text-slate-400" />;
+    }
   };
 
   return (
@@ -32,12 +59,75 @@ export default function Header() {
           <h1 className="text-[17px] font-black text-slate-900 tracking-tight">아이노트</h1>
         </div>
         <div className="flex items-center gap-1">
-          <button className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 transition-all relative">
-            <Bell size={20} />
-            <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
-              3
-            </span>
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => setIsNotifOpen(!isNotifOpen)}
+              className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all relative ${isNotifOpen ? 'bg-slate-100 text-[#4D61FF]' : 'text-slate-400 hover:bg-slate-50'}`}
+            >
+              <Bell size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white animate-pulse">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* Notification Dropdown */}
+            {isNotifOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-[60]" 
+                  onClick={() => setIsNotifOpen(false)}
+                />
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-[70] animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-50">
+                    <h3 className="text-[14px] font-bold text-slate-800">알림</h3>
+                    {unreadCount > 0 && (
+                      <button 
+                        onClick={() => markAllAsRead()}
+                        className="text-[12px] text-slate-400 hover:text-[#4D61FF] font-medium"
+                      >
+                        모두 읽음
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-[320px] overflow-y-auto">
+                    {notifications.filter(n => !n.isRead).length === 0 ? (
+                      <div className="py-10 flex flex-col items-center justify-center text-slate-400">
+                        <Bell size={32} className="mb-2 opacity-20" />
+                        <p className="text-[13px]">새로운 알림이 없습니다</p>
+                      </div>
+                    ) : (
+                      notifications.filter(n => !n.isRead).map((notif) => (
+                        <button
+                          key={notif.id}
+                          onClick={() => handleNotifClick(notif)}
+                          className={`w-full flex gap-3 px-4 py-3.5 hover:bg-slate-50 transition-colors text-left border-b border-slate-50 last:border-0 bg-blue-50/30`}
+                        >
+                          <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${!notif.isRead ? 'bg-white shadow-sm' : 'bg-slate-50'}`}>
+                            {getNotifIcon(notif.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start mb-0.5">
+                              <p className={`text-[13px] leading-tight flex-1 pr-2 ${!notif.isRead ? 'font-bold text-slate-900' : 'text-slate-600'}`}>
+                                {notif.title}
+                              </p>
+                              <span className="text-[10px] text-slate-400 whitespace-nowrap mt-0.5">
+                                {formatNotificationTime(notif.createdAt)}
+                              </span>
+                            </div>
+                            <p className="text-[12px] text-slate-500 truncate">
+                              {notif.content}
+                            </p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
           {user && (
             <button
               className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"

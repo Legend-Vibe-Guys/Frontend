@@ -76,3 +76,21 @@ export function getDaysInMonth(year: number, month: number): number {
 export function getFirstDayOfMonth(year: number, month: number): number {
   return new Date(year, month, 1).getDay();
 }
+/**
+ * 알림용 상대 시간 표시
+ */
+export function formatNotificationTime(isoStr: string): string {
+  if (!isoStr) return '';
+  const now = new Date();
+  const target = new Date(isoStr);
+  const diff = now.getTime() - target.getTime();
+  const minutes = Math.floor(diff / 60000);
+
+  if (minutes < 1) return '방금';
+  if (minutes < 60) return `${minutes}분 전`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}시간 전`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}일 전`;
+  return isoStr.split('T')[0];
+}

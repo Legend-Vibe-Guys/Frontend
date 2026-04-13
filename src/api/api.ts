@@ -1,5 +1,5 @@
 import { auth } from '../config/firebase';
-import type { ApiError, Notice, Child, ScheduleItem, ObservationRecord, MonthlyReport, Comment } from '../types';
+import type { ApiError, Notice, Child, ScheduleItem, ObservationRecord, MonthlyReport, Comment, AppNotification } from '../types';
 
 export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -254,5 +254,16 @@ export const monthlyReportAPI = {
     request<{ success: boolean; message: string }>(`/report/monthly/${id}`, {
       method: 'DELETE'
     })
+};
+
+// ── Notification API ──
+export const notificationAPI = {
+  getAll: () => request<{ success: boolean; notifications: AppNotification[] }>('/notifications'),
+  markAsRead: (id: string) => request<{ success: boolean }>(`/notifications/${id}/read`, {
+    method: 'PATCH'
+  }),
+  markAllAsRead: () => request<{ success: boolean }>('/notifications/read-all', {
+    method: 'PATCH'
+  }),
 };
 

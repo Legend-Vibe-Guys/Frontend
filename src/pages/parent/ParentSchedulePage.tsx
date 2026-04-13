@@ -4,6 +4,7 @@ import {
   Clock, 
   ChevronLeft, 
   ChevronRight, 
+  Sparkles,
 } from 'lucide-react';
 import { formatDateISO, formatTimeKorean } from '../../utils/date';
 
@@ -168,10 +169,12 @@ export default function ParentSchedulePage() {
 
         {filteredSchedules.length === 0 ? (
           <div className="bg-white/50 backdrop-blur-md rounded-[2.2rem] p-10 border border-white/60 text-center shadow-inner">
-            <p className="text-[40px] mb-4 opacity-50">✨</p>
-            <p className="text-[14px] text-slate-400 font-bold leading-relaxed italic opacity-80">
-              이날은 특별한<br/>일정이 없어요.
-            </p>
+          <div className="flex justify-center mb-4">
+            <Sparkles size={48} className="text-amber-400 opacity-40 animate-pulse" />
+          </div>
+          <p className="text-[14px] text-slate-400 font-bold leading-relaxed italic opacity-80">
+            이날은 특별한<br/>일정이 없어요.
+          </p>
           </div>
         ) : (
           <div className="space-y-4 relative">
