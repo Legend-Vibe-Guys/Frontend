@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 
 interface ConfirmModalProps {
   isOpen: boolean;
+  title?: string;
   message: string;
   subMessage?: string;
   confirmText?: string;
@@ -14,6 +15,7 @@ interface ConfirmModalProps {
 
 export default function ConfirmModal({
   isOpen,
+  title,
   message,
   subMessage,
   confirmText = '확인',
@@ -39,6 +41,9 @@ export default function ConfirmModal({
             <AlertTriangle className="text-red-500 w-6 h-6" strokeWidth={2.5} />
           </div>
           <div>
+            {title && (
+              <h3 className="text-slate-900 font-black text-lg mb-1">{title}</h3>
+            )}
             <p className="text-slate-800 font-bold text-[16px] whitespace-pre-line leading-snug">
               {message}
             </p>

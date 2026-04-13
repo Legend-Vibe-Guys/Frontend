@@ -1,24 +1,15 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../../hooks';
-import { Bell, ChevronDown, Megaphone, ClipboardList, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
-import { API_BASE } from '../../api/api';
-import ImageViewer from '../../components/common/ImageViewer';
-
-const getFullImageUrl = (url?: string) => {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${API_BASE}${url}`;
-};
+import { Bell, Megaphone, ClipboardList, ChevronLeft, ChevronRight, MessageSquare, ChevronRight as ChevronRightIcon } from 'lucide-react';
+import { PATH } from '../../router/Path';
 
 export default function ParentNoticePage() {
   const { notices, children, markNoticeAsRead } = useAppData();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<'common' | 'individual'>('common');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [viewerImages, setViewerImages] = useState<string[]>([]);
-  const [viewerIndex, setViewerIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 7;
-
 
   const commonNotices = notices.filter((n) => n.type === 'common');
   const childIds = children.map(c => c.id);
@@ -39,7 +30,11 @@ export default function ParentNoticePage() {
   const handleTabChange = (newTab: 'common' | 'individual') => {
     setTab(newTab);
     setCurrentPage(1);
-    setExpandedId(null);
+  };
+
+  const handleNoticeClick = (noticeId: string, isRead: boolean) => {
+    if (!isRead) markNoticeAsRead(noticeId);
+    navigate(PATH.PARENT.NOTICE_DETAIL.replace(':id', noticeId));
   };
 
   return (
@@ -79,66 +74,32 @@ export default function ParentNoticePage() {
           displayedList.map((notice) => (
             <div 
               key={notice.id} 
-              className={`bg-white/70 backdrop-blur-lg rounded-[2.2rem] overflow-hidden transition-all duration-300 border ${expandedId === notice.id ? 'border-orange-200 shadow-lg' : 'border-white/60 shadow-sm'}`}
+              onClick={() => handleNoticeClick(notice.id, notice.isRead)}
+              className="bg-white/70 backdrop-blur-lg rounded-[2.2rem] overflow-hidden transition-all duration-300 border border-white/60 shadow-sm hover:shadow-md active:scale-[0.98] cursor-pointer"
             >
-              {/* 리스트 아이템 내용 동일 */}
-              <div 
-                className="p-5 cursor-pointer flex items-start justify-between gap-4" 
-                onClick={() => {
-                  if (expandedId !== notice.id) {
-                    setExpandedId(notice.id);
-                    if (!notice.isRead) markNoticeAsRead(notice.id);
-                  } else {
-                    setExpandedId(null);
-                  }
-                }}
-              >
+              <div className="p-6 flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-[10px] font-black text-orange-600 px-2 py-0.5 bg-orange-100 rounded-full">{notice.date}</span>
                     {!notice.isRead && <span className="w-2 h-2 bg-orange-500 rounded-full shadow-sm" />}
                   </div>
-                  <h4 className={`text-[17px] font-black text-slate-800 leading-tight ${expandedId === notice.id ? '' : 'line-clamp-1'}`}>
+                  <h4 className="text-[17px] font-black text-slate-800 leading-tight mb-2 truncate">
                     {notice.title}
                   </h4>
-                </div>
-                <div className="flex items-center gap-2 pt-1 text-slate-400">
-                  {notice.photoUrl && <Camera size={16} />}
-                  <div className={`transition-transform duration-300 ${expandedId === notice.id ? 'rotate-180 text-orange-600' : ''}`}>
-                    <ChevronDown size={20} strokeWidth={3} />
+                  <p className="text-xs text-slate-500 line-clamp-1 font-medium italic opacity-70">
+                    {notice.content}
+                  </p>
+                  <div className="flex items-center gap-4 mt-3">
+                    <div className="flex items-center gap-1.5 text-orange-500">
+                      <MessageSquare size={14} />
+                      <span className="text-xs font-black">{notice.commentCount || 0}</span>
+                    </div>
                   </div>
+                </div>
+                <div className="flex items-center self-center text-slate-200">
+                  <ChevronRightIcon size={24} strokeWidth={3} />
                 </div>
               </div>
-
-              {expandedId === notice.id && (
-                <div className="px-5 pb-6 animate-slide-down">
-                  {((notice.photoUrls && notice.photoUrls.length > 0) || (notice.photoUrl && notice.photoUrl !== 'string')) && (
-                    <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
-                      {(notice.photoUrls && notice.photoUrls.length > 0 ? notice.photoUrls : [notice.photoUrl!]).map((photo, idx, arr) => (
-                        <div 
-                          key={idx}
-                          className="flex-shrink-0 w-36 h-36 rounded-[1.8rem] overflow-hidden border border-white/40 shadow-md cursor-zoom-in group"
-                          onClick={() => {
-                            setViewerImages(arr.map(p => getFullImageUrl(p)));
-                            setViewerIndex(idx);
-                          }}
-                        >
-                          <img 
-                            src={getFullImageUrl(photo)} 
-                            alt={`Notice ${idx}`} 
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="p-4 bg-white/50 rounded-[1.8rem] border border-white/60">
-                    <p className="text-[14px] text-slate-700 leading-relaxed whitespace-pre-line font-medium italic">
-                      {notice.content}
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
           ))
         )}
@@ -181,13 +142,6 @@ export default function ParentNoticePage() {
         </div>
       )}
 
-      {viewerImages.length > 0 && (
-        <ImageViewer 
-          images={viewerImages} 
-          initialIndex={viewerIndex}
-          onClose={() => setViewerImages([])} 
-        />
-      )}
     </div>
   );
 }

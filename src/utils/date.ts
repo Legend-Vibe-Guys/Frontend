@@ -2,7 +2,8 @@
  * 날짜를 한국어 형식으로 포맷
  * @returns "2026년 4월 7일 화요일"
  */
-export function formatDateKorean(date: Date = new Date()): string {
+export function formatDateKorean(dateInput: Date | string = new Date()): string {
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
   const days = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
@@ -14,8 +15,19 @@ export function formatDateKorean(date: Date = new Date()): string {
 /**
  * 시간을 "오전/오후 HH:MM" 형으로
  */
-export function formatTimeKorean(time: string): string {
-  const [h, m] = time.split(':').map(Number);
+export function formatTimeKorean(timeInput: string): string {
+  let h: number, m: number;
+  
+  if (timeInput.includes('T') || timeInput.includes('-')) {
+    // ISO string or full date string
+    const date = new Date(timeInput);
+    h = date.getHours();
+    m = date.getMinutes();
+  } else {
+    // HH:MM string
+    [h, m] = timeInput.split(':').map(Number);
+  }
+
   const period = h < 12 ? '오전' : '오후';
   const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return `${period} ${hour12}:${String(m).padStart(2, '0')}`;

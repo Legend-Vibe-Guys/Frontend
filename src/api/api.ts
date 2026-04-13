@@ -1,5 +1,5 @@
 import { auth } from '../config/firebase';
-import type { ApiError, Notice, Child, ScheduleItem, ObservationRecord, MonthlyReport } from '../types';
+import type { ApiError, Notice, Child, ScheduleItem, ObservationRecord, MonthlyReport, Comment } from '../types';
 
 export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -138,6 +138,22 @@ export const noticeAPI = {
     }),
   send: (noticeId: string) =>
     request(`/notices/${noticeId}/send`, { method: 'POST' }),
+};
+
+// ── Comment API ──
+export const commentAPI = {
+  getAll: (noticeId: string) => request<{ success: boolean; comments: Comment[] }>(`/notices/${noticeId}/comments`),
+  create: (noticeId: string, content: string) => request<{ success: boolean; comment: Comment }>(`/notices/${noticeId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify({ content })
+  }),
+  delete: (noticeId: string, commentId: string) => request<{ success: boolean; message: string }>(`/notices/${noticeId}/comments/${commentId}`, {
+    method: 'DELETE'
+  }),
+  update: (noticeId: string, commentId: string, content: string) => request<{ success: boolean; comment: Comment }>(`/notices/${noticeId}/comments/${commentId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ content })
+  }),
 };
 
 // ── Observation API ──
