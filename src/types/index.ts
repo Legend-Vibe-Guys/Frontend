@@ -100,6 +100,18 @@ export interface Notice {
   keywords?: string[];
   cushionLevel?: CushionLevel;
   createdAt?: string;
+  commentCount?: number;
+}
+
+export interface Comment {
+  id: string;
+  noticeId: string;
+  authorUid: string;
+  authorName: string;
+  authorRole: 'teacher' | 'parent';
+  content: string;
+  createdAt: string;
+  isEdited?: boolean;
 }
 
 // ── 관찰일지 ──
