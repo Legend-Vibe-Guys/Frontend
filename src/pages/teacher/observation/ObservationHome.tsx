@@ -1,4 +1,4 @@
-import { Camera, Sparkles, FolderClock, FileText, ChevronRight } from 'lucide-react';
+import { Camera, Wand2, BookUser, BarChart3, ChevronRight } from 'lucide-react';
 
 interface ObservationHomeProps {
   onNavigate: (page: 'quick_list' | 'archive' | 'report') => void;
@@ -21,7 +21,7 @@ export function ObservationHome({ onNavigate }: ObservationHomeProps) {
           className="bg-white border-2 border-transparent hover:border-indigo-400 p-6 rounded-[2rem] shadow-sm hover:shadow-md transition-all text-left flex items-center gap-6 group active:scale-[0.98]"
         >
           <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-500 shrink-0 group-hover:scale-110 transition-transform">
-            <Sparkles size={28} />
+            <Wand2 size={28} />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-xl font-black text-slate-800 mb-1">빠른 관찰 메모</h3>
@@ -35,7 +35,7 @@ export function ObservationHome({ onNavigate }: ObservationHomeProps) {
           className="bg-white border-2 border-transparent hover:border-blue-400 p-6 rounded-[2rem] shadow-sm hover:shadow-md transition-all text-left flex items-center gap-6 group active:scale-[0.98]"
         >
           <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 shrink-0 group-hover:scale-110 transition-transform">
-            <FolderClock size={28} />
+            <BookUser size={28} />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-xl font-black text-slate-800 mb-1">생활 기록부</h3>
@@ -49,7 +49,7 @@ export function ObservationHome({ onNavigate }: ObservationHomeProps) {
           className="bg-white border-2 border-transparent hover:border-emerald-400 p-6 rounded-[2rem] shadow-sm hover:shadow-md transition-all text-left flex items-center gap-6 group active:scale-[0.98]"
         >
           <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 shrink-0 group-hover:scale-110 transition-transform">
-            <FileText size={28} />
+            <BarChart3 size={28} />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-xl font-black text-slate-800 mb-1">월말 종합 평가</h3>
