@@ -175,7 +175,7 @@ export default function HomePage() {
                 <p className="text-[12px] text-slate-500 font-bold mb-0.5">관찰일지 작성 현황</p>
                 <p className="text-[20px] font-black text-slate-800">
                   {stats.observationCompleted}
-                  <span className="text-[14px] ml-1 opacity-40 font-bold">/ {stats.observationTotal}건</span>
+                  <span className="text-[14px] ml-1 opacity-40 font-bold">/ {stats.observationTotal}명</span>
                 </p>
                 {/* 진행바 */}
                 <div className="h-1.5 bg-slate-100 rounded-full mt-2 w-36 overflow-hidden">

@@ -5,6 +5,7 @@ import {
   useState,
   useCallback,
   useEffect,
+  useMemo,
   type ReactNode,
 } from 'react';
 import { useAuth } from './AuthContext';
@@ -87,17 +88,6 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
   const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
   const [observations, setObservations] = useState<ObservationLog[]>([]);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalChildren: 0,
-    presentCount: 0,
-    absentCount: 0,
-    noticeCompleted: 0,
-    noticeTotal: 0,
-    observationCompleted: 0,
-    observationTotal: 0,
-    medicationRequests: 0,
-    allergyCount: 0,
-  });
   const [activities, setActivities] = useState<ActivityTimeline[]>([]);
   const [meals, setMeals] = useState<MealPlan[]>([]);
   const [monthlyReports, setMonthlyReports] = useState<MonthlyReport[]>([]);
@@ -179,24 +169,6 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
           setAttendance(MOCK_DASHBOARD_STATS.presentCount ? [] : []); // 출석 데이터 초기화 (임시)
           setActivities([]);
           setMeals([]);
-
-          // 통계 통합 계산
-          const today = formatDateISO();
-          const noticeCompleted = (noticeRes.notices || []).filter(n => n.type === 'individual' && n.date === today && n.isSent).length;
-          const observationCompleted = (observationRes?.observations || []).filter((o: ObservationRecord) => o.date === today).length;
-          
-          setStats({
-            totalChildren: mappedChildren.length,
-            presentCount: MOCK_DASHBOARD_STATS.presentCount,
-            absentCount: MOCK_DASHBOARD_STATS.absentCount,
-            noticeCompleted,
-            noticeTotal: mappedChildren.length,
-            observationCompleted,
-            observationTotal: mappedChildren.length,
-            medicationRequests: mappedChildren.filter(c => c.medicationRequest && c.medicationRequest.trim() !== '').length,
-            allergyCount: mappedChildren.filter(c => c.allergies && c.allergies.length > 0).length,
-          });
-
         } catch (err) {
           console.error("Failed to load application data", err);
         } finally {
@@ -233,14 +205,6 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
             : a,
         ),
       );
-      setStats((prev) => {
-        const presentDelta = status === 'present' ? 1 : -1;
-        return {
-          ...prev,
-          presentCount: prev.presentCount + presentDelta,
-          absentCount: prev.absentCount - presentDelta,
-        };
-      });
     },
     [],
   );
@@ -362,16 +326,6 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
       await observationAPI.delete(id);
       
       setObservations((prev) => prev.filter((o) => o.id !== id));
-      
-      // 통계 업데이트
-      setStats(prev => {
-        const deletedObs = observations.find(o => o.id === id);
-        const today = formatDateISO();
-        if (deletedObs && deletedObs.date === today) {
-          return { ...prev, observationCompleted: Math.max(0, prev.observationCompleted - 1) };
-        }
-        return prev;
-      });
     } catch (error) {
       console.error("Failed to delete observation", error);
       throw error;
@@ -604,15 +558,6 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
     try {
       await noticeAPI.delete(id);
       setNotices((prev) => prev.filter((n) => n.id !== id));
-      
-      setStats(prev => {
-        const deletedNotice = notices.find(n => n.id === id);
-        const today = formatDateISO();
-        if (deletedNotice && deletedNotice.date === today && deletedNotice.isSent && deletedNotice.type === 'individual') {
-          return { ...prev, noticeCompleted: Math.max(0, prev.noticeCompleted - 1) };
-        }
-        return prev;
-      });
     } catch (error) {
       console.error("Failed to delete notice", error);
       throw error;
@@ -630,6 +575,49 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
       throw error;
     }
   }, []);
+
+  // 대시보드 통계 계산 (derived state)
+  const stats = useMemo<DashboardStats>(() => {
+    const today = formatDateISO();
+    
+    // 알림장 완료 (개인 유형, 오늘 날짜, 발송 완료)
+    const noticeCompleted = notices.filter(
+      (n) => n.type === 'individual' && n.date === today && n.isSent
+    ).length;
+
+    // 관찰일지 완료 (오늘 작성된 건의 유니크한 아이 수)
+    const todayObsChildIds = new Set(
+      observations
+        .filter((o) => o.date === today)
+        .map((o) => o.childId)
+    );
+    const observationCompleted = todayObsChildIds.size;
+
+    // 투약 의뢰 및 알레르기 수
+    const medicationRequests = childrenData.filter(
+      (c) => c.medicationRequest && c.medicationRequest.trim() !== ''
+    ).length;
+    const allergyCount = childrenData.filter(
+      (c) => c.allergies && c.allergies.length > 0
+    ).length;
+
+    // 출석 (임시로 기존 Mock 방식 유지하되, attendance에 데이터가 있으면 반영)
+    const activeAttendance = attendance.filter(a => a.date === today);
+    const presentCount = activeAttendance.filter(a => a.status === 'present').length || MOCK_DASHBOARD_STATS.presentCount;
+    const absentCount = activeAttendance.filter(a => a.status === 'absent').length || MOCK_DASHBOARD_STATS.absentCount;
+
+    return {
+      totalChildren: childrenData.length,
+      presentCount,
+      absentCount,
+      noticeCompleted,
+      noticeTotal: childrenData.length,
+      observationCompleted,
+      observationTotal: childrenData.length,
+      medicationRequests,
+      allergyCount,
+    };
+  }, [childrenData, notices, observations, attendance]);
 
   return (
     <AppDataContext.Provider
