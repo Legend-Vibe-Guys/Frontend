@@ -208,3 +208,16 @@ export interface ActivityTimeline {
   time: string;
   icon: string;
 }
+
+// ── 알림 ──
+export interface AppNotification {
+  id: string;
+  recipientUid: string;
+  title: string;
+  content: string;
+  type: 'comment' | 'notice' | 'observation' | 'schedule' | 'class_update' | 'health_update';
+  link: string;
+  isRead: boolean;
+  createdAt: string;
+  senderName: string;
+}
