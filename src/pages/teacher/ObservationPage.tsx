@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAppData } from '../../hooks';
-import { Sparkles, ArrowLeft, Users } from 'lucide-react';
+import { Wand2, ArrowLeft, BookUser, BarChart3 } from 'lucide-react';
 import { ChildListGrid } from '../../components/teacher/ChildListGrid';
 import { ObservationHome } from './observation/ObservationHome';
 import { QuickMemoForm } from './observation/QuickMemoForm';
@@ -124,7 +124,7 @@ export default function ObservationPage() {
         <div className="p-6 md:p-10 max-w-3xl mx-auto animate-fade-in-up h-full print:hidden">
            <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-200">
              <button onClick={handleGoBack} className="w-12 h-12 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-all active:scale-95"><ArrowLeft size={24} /></button>
-             <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2 truncate"><Sparkles size={28} className="text-indigo-500 shrink-0" /> 메모 작성</h2>
+             <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2 truncate"><Wand2 size={28} className="text-indigo-500 shrink-0" /> 메모 작성</h2>
            </div>
            
            <QuickMemoForm 
@@ -146,7 +146,7 @@ export default function ObservationPage() {
         <div className="p-6 md:p-12 max-w-4xl mx-auto animate-fade-in-left h-full print:hidden">
           <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-200">
              <button onClick={handleGoBack} className="w-12 h-12 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-all active:scale-95"><ArrowLeft size={24} /></button>
-             <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2 truncate"><Users size={28} className="text-indigo-500 shrink-0" /> 생활 기록부</h2>
+             <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2 truncate"><BookUser size={28} className="text-indigo-500 shrink-0" /> 생활 기록부</h2>
           </div>
           <ObservationArchive 
             observations={observations} 
@@ -161,7 +161,7 @@ export default function ObservationPage() {
         <div className="p-6 md:p-12 max-w-4xl mx-auto animate-fade-in-up h-full">
           <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-200 print:hidden">
              <button onClick={handleGoBack} className="w-12 h-12 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-all active:scale-95"><ArrowLeft size={24} /></button>
-             <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2 truncate"><Users size={28} className="text-indigo-500 shrink-0" /> 종합 평가 생성</h2>
+             <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2 truncate"><BarChart3 size={28} className="text-indigo-500 shrink-0" /> 종합 평가 생성</h2>
           </div>
           <MonthlyReportView children={children} observations={observations} />
         </div>
