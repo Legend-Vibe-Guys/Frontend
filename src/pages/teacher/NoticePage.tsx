@@ -12,18 +12,14 @@ import {
   Image as ImageIcon,
   RefreshCcw,
   X,
-  Edit3,
-  Trash2,
   Megaphone,
   PenLine,
-  ChevronLeft,
   ChevronRight,
   ArrowLeft,
 } from 'lucide-react';
 import { StatusDashboard } from '../../components/teacher/StatusDashboard';
 import { ChildListGrid } from '../../components/teacher/ChildListGrid';
 import { PATH } from '../../router/Path';
-import ImageViewer from '../../components/common/ImageViewer';
 import AlertModal from '../../components/common/AlertModal';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import Toast from '../../components/common/Toast';
@@ -42,7 +38,6 @@ export default function NoticePage() {
     generateAICommonNotice,
     notices,
     schedules,
-    deleteNotice,
   } = useAppData();
   const navigate = useNavigate();
   const [alertModal, setAlertModal] = useState<{ isOpen: boolean; message: string; type: 'success' | 'error' | 'info' }>({
@@ -72,26 +67,6 @@ export default function NoticePage() {
     setToast({ isVisible: true, message, type });
   };
 
-  const handleDeleteNotice = (id: string) => {
-    setConfirmModal({
-      isOpen: true,
-      message: '정말 삭제할까요?',
-      subMessage: '삭제하면 다시 복구할 수 없어요.',
-      targetId: id,
-      onConfirm: async () => {
-        try {
-          await deleteNotice(id);
-          showToastMsg('삭제되었어요.', 'success');
-        } catch {
-          showAlert('알림장 삭제에 실패했습니다.', 'error');
-        }
-      }
-    });
-  };
-
-  const [viewerImages, setViewerImages] = useState<string[]>([]);
-  const [viewerIndex, setViewerIndex] = useState(0);
-
   const [activeTab, setActiveTab] = useState<'common' | 'individual'>('common');
 
   const [commonTitle, setCommonTitle] = useState('');
@@ -111,17 +86,6 @@ export default function NoticePage() {
   const [memos, setMemos] = useState<Record<string, string>>({});
   const [drafts, setDrafts] = useState<Record<string, Notice>>({});
   const [isGenerating, setIsGenerating] = useState(false);
-  
-  // Pagination State
-  const [commonPage, setCommonPage] = useState(1);
-  const [individualPage, setIndividualPage] = useState(1);
-  const PAGE_SIZE = 5;
-
-  // Reset page when tab or child selection changes
-  useEffect(() => {
-    setCommonPage(1);
-    setIndividualPage(1);
-  }, [activeTab, selectedChildId]);
 
   const allChildren = children; // 모든 원아 표시 요구사항 반영
   const commonNotices = notices
@@ -309,9 +273,11 @@ export default function NoticePage() {
       }
     }
 
+    const child = allChildren.find((c) => c.id === childId);
     try {
       await addNotice({
         ...draft,
+        childName: child?.name,
         isSent: true,
         photoUrls,
         photoUrl: photoUrls[0] || '',
@@ -514,106 +480,58 @@ export default function NoticePage() {
           </div>
 
           <div>
-            <h4 className="text-sm font-bold text-slate-600 mb-3 ml-2">발송 내역</h4>
-            <div className="flex flex-col gap-3">
-              {commonNotices.length > 0 ? (
-                <>
-                  {commonNotices
-                    .slice((commonPage - 1) * PAGE_SIZE, commonPage * PAGE_SIZE)
-                    .map((n) => (
-                      <div
-                        key={n.id}
-                        className="p-4 bg-white border border-slate-200 rounded-2xl group relative overflow-hidden"
-                      >
-                    <div className="absolute top-0 right-0 p-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => navigate(PATH.TEACHER.NOTICE_EDIT.replace(':id', n.id))}
-                        className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
-                        title="수정"
-                      >
-                        <Edit3 size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteNotice(n.id)}
-                        className="p-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors"
-                        title="삭제"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                    <div className="mb-2">
-                      <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-500 text-[10px] font-bold rounded-md border border-blue-100/50 shadow-sm">
-                        {n.date}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-start mb-2">
-                      <p className="font-bold text-sm text-slate-800">{n.title}</p>
-                    </div>
-                    <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-line">
-                      {n.content}
-                    </p>
-                    {/* Multiple Photos Display */}
-                    {((n.photoUrls && n.photoUrls.length > 0) ||
-                      (n.photoUrl && n.photoUrl !== 'string')) && (
-                      <div className="flex gap-2 overflow-x-auto mt-3 pb-2 scrollbar-hide">
-                        {(n.photoUrls && n.photoUrls.length > 0 ? n.photoUrls : [n.photoUrl!]).map(
-                          (photo, index, arr) => (
-                            <div
-                              key={index}
-                              className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden border border-slate-100 cursor-zoom-in group/img"
-                              onClick={() => {
-                                setViewerImages(arr.map((p) => getFullImageUrl(p)));
-                                setViewerIndex(index);
-                              }}
-                            >
-                              <img
-                                src={getFullImageUrl(photo)}
-                                alt={`Attached ${index}`}
-                                className="w-full h-full object-cover transition-transform group-hover/img:scale-110"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).parentElement?.style.setProperty(
-                                    'display',
-                                    'none',
-                                  );
-                                }}
-                              />
-                            </div>
-                          ),
-                        )}
-                      </div>
-                    )}
+          <div className="flex items-center justify-between mb-3 ml-2">
+            <h4 className="text-sm font-bold text-slate-600">발송 내역</h4>
+            {commonNotices.length > 0 && (
+              <button 
+                onClick={() => navigate(PATH.TEACHER.NOTICE_LIST)}
+                className="flex items-center gap-1 text-[11px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors"
+              >
+                전체보기 <ChevronRight size={12} />
+              </button>
+            )}
+          </div>
+          <div className="flex flex-col gap-3">
+            {commonNotices.length > 0 ? (
+              <div
+                key={commonNotices[0].id}
+                onClick={() => navigate(PATH.TEACHER.NOTICE_DETAIL.replace(':id', commonNotices[0].id))}
+                className="p-5 bg-white border border-slate-100 rounded-[2rem] shadow-sm active:scale-[0.98] transition-all cursor-pointer group"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-500 text-[10px] font-bold rounded-md border border-blue-100/50">
+                    {commonNotices[0].date}
+                  </span>
+                  <div className="flex items-center gap-1.5 text-blue-500">
+                    <MessageSquare size={14} />
+                    <span className="text-xs font-black">{commonNotices[0].commentCount || 0}</span>
                   </div>
-                ))}
-                
-                {/* Common Pagination Controls */}
-                {commonNotices.length > PAGE_SIZE && (
-                  <div className="flex items-center justify-center gap-4 mt-6 py-2">
-                    <button
-                      onClick={() => setCommonPage(prev => Math.max(1, prev - 1))}
-                      disabled={commonPage === 1}
-                      className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed hover:text-blue-600 transition-colors"
-                    >
-                      <ChevronLeft size={16} />
-                    </button>
-                    <span className="text-xs font-bold text-slate-500">
-                      {commonPage} / {Math.ceil(commonNotices.length / PAGE_SIZE)}
-                    </span>
-                    <button
-                      onClick={() => setCommonPage(prev => Math.min(Math.ceil(commonNotices.length / PAGE_SIZE), prev + 1))}
-                      disabled={commonPage === Math.ceil(commonNotices.length / PAGE_SIZE)}
-                      className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed hover:text-blue-600 transition-colors"
-                    >
-                      <ChevronRight size={16} />
-                    </button>
+                </div>
+                <h3 className="font-black text-[15px] text-slate-800 mb-1">{commonNotices[0].title}</h3>
+                <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
+                  {commonNotices[0].content}
+                </p>
+                {/* Images Preview */}
+                {((commonNotices[0].photoUrls && commonNotices[0].photoUrls.length > 0) ||
+                  (commonNotices[0].photoUrl && commonNotices[0].photoUrl !== 'string')) && (
+                  <div className="flex gap-2 mt-3 overflow-hidden">
+                    {(commonNotices[0].photoUrls && commonNotices[0].photoUrls.length > 0 
+                      ? commonNotices[0].photoUrls 
+                      : [commonNotices[0].photoUrl!]
+                    ).slice(0, 3).map((photo, idx) => (
+                      <div key={idx} className="w-16 h-16 rounded-xl overflow-hidden border border-slate-50 shrink-0">
+                        <img src={getFullImageUrl(photo)} className="w-full h-full object-cover" alt="" />
+                      </div>
+                    ))}
                   </div>
                 )}
-                </>
-              ) : (
-                <div className="text-center text-xs text-slate-400 py-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                  발송 내역이 없습니다.
-                </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="text-center text-xs text-slate-400 py-10 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                발송 내역이 없습니다.
+              </div>
+            )}
+          </div>
           </div>
         </div>
       )}
@@ -856,131 +774,79 @@ export default function NoticePage() {
 
               {/* Selected Child History */}
               <div className="mt-8 mb-4 animate-fade-in">
-                <h4 className="text-sm font-bold text-slate-600 mb-3 ml-2 flex items-center gap-1.5">
-                  <MessageSquare size={16} className="text-slate-400" />이 아이의 최근 알림장 전송
-                  내역
-                </h4>
+                <div className="flex items-center justify-between mb-3 ml-2">
+                  <h4 className="text-sm font-bold text-slate-600 flex items-center gap-1.5">
+                    <MessageSquare size={16} className="text-slate-400" />이 아이의 최근 알림장
+                  </h4>
+                  {individualNotices.filter((n) => n.childId === selectedChildId).length > 0 && (
+                    <button 
+                      onClick={() => navigate(PATH.TEACHER.NOTICE_LIST)}
+                      className="flex items-center gap-1 text-[11px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors"
+                    >
+                      전체보기 <ChevronRight size={12} />
+                    </button>
+                  )}
+                </div>
                 <div className="flex flex-col gap-3">
-                  {individualNotices.filter((n) => n.childId === selectedChildId).length > 0 ? (
-                    <>
-                      {individualNotices
-                        .filter((n) => n.childId === selectedChildId)
-                        .slice((individualPage - 1) * PAGE_SIZE, individualPage * PAGE_SIZE)
-                        .map((n) => (
-                          <div
-                            key={n.id}
-                            className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm group relative overflow-hidden"
-                          >
-                          <div className="absolute top-0 right-0 p-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={() =>
-                                navigate(PATH.TEACHER.NOTICE_EDIT.replace(':id', n.id))
-                              }
-                              className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
-                              title="수정"
-                            >
-                              <Edit3 size={14} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteNotice(n.id)}
-                              className="p-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors"
-                              title="삭제"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
+                  {(() => {
+                    const childNotices = individualNotices.filter((n) => n.childId === selectedChildId);
+                    if (childNotices.length > 0) {
+                      const latest = childNotices[0];
+                      return (
+                        <div
+                          key={latest.id}
+                          onClick={() => navigate(PATH.TEACHER.NOTICE_DETAIL.replace(':id', latest.id))}
+                          className="p-5 bg-white border border-slate-100 rounded-[2rem] shadow-sm active:scale-[0.98] transition-all cursor-pointer group"
+                        >
                           <div className="flex justify-between items-start mb-2">
-                            <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-500 text-[10px] font-bold rounded-md border border-blue-100/50 shadow-sm">
-                              {n.date}
+                            <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-500 text-[10px] font-bold rounded-md border border-blue-100/50">
+                              {latest.date}
                             </span>
-                            {n.type !== 'common' &&
-                              (n.isRead ? (
-                                <p className="text-[10px] text-slate-400 font-bold px-2 py-0.5 bg-slate-100 rounded-md">
-                                  읽음
-                                </p>
+                            <div className="flex items-center gap-3">
+                              {latest.isRead ? (
+                                <span className="text-[10px] text-slate-400 font-bold px-2 py-0.5 bg-slate-50 rounded-md">읽음</span>
                               ) : (
-                                <p className="text-[10px] text-amber-500 font-bold px-2 py-0.5 bg-amber-50 rounded-md">
-                                  안읽음
-                                </p>
-                              ))}
-                          </div>
-                          <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-line bg-slate-50 p-3 rounded-xl mt-2">
-                            {n.content}
-                          </p>
-                          {/* 개별 알림장 사진 표시 추가 */}
-                          {((n.photoUrls && n.photoUrls.length > 0) ||
-                            (n.photoUrl && n.photoUrl !== 'string' && n.photoUrl !== '')) && (
-                            <div className="flex gap-2 overflow-x-auto mt-3 pb-2 scrollbar-hide">
-                              {(n.photoUrls && n.photoUrls.length > 0 ? n.photoUrls : [n.photoUrl!]).map(
-                                (photo, index, arr) => (
-                                  <div
-                                    key={index}
-                                    className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-slate-100 cursor-zoom-in group/img"
-                                    onClick={() => {
-                                      setViewerImages(arr.map((p) => getFullImageUrl(p)));
-                                      setViewerIndex(index);
-                                    }}
-                                  >
-                                    <img
-                                      src={getFullImageUrl(photo)}
-                                      alt={`Attached ${index}`}
-                                      className="w-full h-full object-cover transition-transform group-hover/img:scale-110"
-                                      onError={(e) => {
-                                        (e.target as HTMLImageElement).parentElement?.style.setProperty(
-                                          'display',
-                                          'none',
-                                        );
-                                      }}
-                                    />
-                                  </div>
-                                ),
+                                <span className="text-[10px] text-amber-500 font-bold px-2 py-0.5 bg-amber-50 rounded-md">안읽음</span>
                               )}
+                              <div className="flex items-center gap-1.5 text-blue-500">
+                                <MessageSquare size={14} />
+                                <span className="text-xs font-black">{latest.commentCount || 0}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-xs text-slate-600 leading-relaxed line-clamp-2 bg-slate-50 p-4 rounded-2xl">
+                            {latest.content}
+                          </p>
+                          {/* Images Preview */}
+                          {((latest.photoUrls && latest.photoUrls.length > 0) ||
+                            (latest.photoUrl && latest.photoUrl !== 'string')) && (
+                            <div className="flex gap-2 mt-3 overflow-hidden">
+                              {(latest.photoUrls && latest.photoUrls.length > 0 
+                                ? latest.photoUrls 
+                                : [latest.photoUrl!]
+                              ).slice(0, 3).map((photo, idx) => (
+                                <div key={idx} className="w-16 h-16 rounded-xl overflow-hidden border border-slate-50 shrink-0">
+                                  <img src={getFullImageUrl(photo)} className="w-full h-full object-cover" alt="" />
+                                </div>
+                              ))}
                             </div>
                           )}
-                          </div>
-                        ))}
-                        
-                      {/* Individual Pagination Controls */}
-                      {individualNotices.filter((n) => n.childId === selectedChildId).length > PAGE_SIZE && (
-                        <div className="flex items-center justify-center gap-4 mt-6 py-2">
-                          <button
-                            onClick={() => setIndividualPage(prev => Math.max(1, prev - 1))}
-                            disabled={individualPage === 1}
-                            className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-400 disabled:opacity-40 disabled:cursor-not-allowed hover:text-blue-600 transition-colors"
-                          >
-                            <ChevronLeft size={16} />
-                          </button>
-                          <span className="text-xs font-bold text-slate-500">
-                            {individualPage} / {Math.ceil(individualNotices.filter((n) => n.childId === selectedChildId).length / PAGE_SIZE)}
-                          </span>
-                          <button
-                            onClick={() => setIndividualPage(prev => Math.min(Math.ceil(individualNotices.filter((n) => n.childId === selectedChildId).length / PAGE_SIZE), prev + 1))}
-                            disabled={individualPage === Math.ceil(individualNotices.filter((n) => n.childId === selectedChildId).length / PAGE_SIZE)}
-                            className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-400 disabled:opacity-40 disabled:cursor-not-allowed hover:text-blue-600 transition-colors"
-                          >
-                            <ChevronRight size={16} />
-                          </button>
                         </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="text-center text-xs text-slate-400 py-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                      최근 알림장 내역이 없습니다.
-                    </div>
-                  )}
+                      );
+                    }
+                    return (
+                      <div className="text-center text-xs text-slate-400 py-10 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200">
+                        발송 내역이 없습니다.
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
           )}
         </div>
       )}
-      {viewerImages.length > 0 && (
-        <ImageViewer
-          images={viewerImages}
-          initialIndex={viewerIndex}
-          onClose={() => setViewerImages([])}
-        />
-      )}
+
       <AlertModal
         isOpen={alertModal.isOpen}
         message={alertModal.message}

@@ -8,12 +8,15 @@ import SchedulePage from '../pages/teacher/SchedulePage';
 import StudentListPage from '../pages/teacher/StudentListPage';
 import StudentDetailPage from '../pages/teacher/StudentDetailPage';
 import NoticePage from '../pages/teacher/NoticePage';
+import NoticeListPage from '../pages/teacher/NoticeListPage';
+import NoticeDetailPage from '../pages/teacher/NoticeDetailPage';
 import NoticeEditPage from '../pages/teacher/NoticeEditPage';
 import ObservationPage from '../pages/teacher/ObservationPage';
 
 // 학부모용 페이지
 import ParentHomePage from '../pages/parent/ParentHomePage';
 import ParentNoticePage from '../pages/parent/ParentNoticePage';
+import ParentNoticeDetailPage from '../pages/parent/ParentNoticeDetailPage';
 import ParentObservationPage from '../pages/parent/ParentObservationPage';
 import ParentSchedulePage from '../pages/parent/ParentSchedulePage';
 import ChildEditPage from '../pages/parent/ChildEditPage';
@@ -49,6 +52,8 @@ const router = createBrowserRouter([
       { path: 'students', element: <StudentListPage /> },
       { path: 'students/:id', element: <StudentDetailPage /> },
       { path: 'notice', element: <NoticePage /> },
+      { path: 'notice/list', element: <NoticeListPage /> },
+      { path: 'notice/detail/:id', element: <NoticeDetailPage /> },
       { path: 'notice/edit', element: <NoticeEditPage /> },
       { path: 'notice/edit/:id', element: <NoticeEditPage /> },
       { path: 'observation', element: <ObservationPage /> },
@@ -62,6 +67,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <ParentHomePage /> },
       { path: 'notices', element: <ParentNoticePage /> },
+      { path: 'notices/:id', element: <ParentNoticeDetailPage /> },
       { path: 'observation', element: <ParentObservationPage /> },
       { path: 'schedule', element: <ParentSchedulePage /> },
       { path: 'child/edit', element: <ChildEditPage /> },
