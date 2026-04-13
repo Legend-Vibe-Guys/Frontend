@@ -580,10 +580,13 @@ export function AppDataProvider({ children: childrenProp }: { children: ReactNod
   const stats = useMemo<DashboardStats>(() => {
     const today = formatDateISO();
     
-    // 알림장 완료 (개인 유형, 오늘 날짜, 발송 완료)
-    const noticeCompleted = notices.filter(
-      (n) => n.type === 'individual' && n.date === today && n.isSent
-    ).length;
+    // 알림장 완료 (오늘 송신된 개인 알림장의 유니크한 아이 수)
+    const todayNoticeChildIds = new Set(
+      notices
+        .filter((n) => n.type === 'individual' && n.date === today && n.childId)
+        .map((n) => n.childId)
+    );
+    const noticeCompleted = todayNoticeChildIds.size;
 
     // 관찰일지 완료 (오늘 작성된 건의 유니크한 아이 수)
     const todayObsChildIds = new Set(
