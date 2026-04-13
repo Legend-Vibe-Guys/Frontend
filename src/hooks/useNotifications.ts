@@ -44,8 +44,7 @@ export function useNotifications() {
         if (res.success && res.notifications) {
           setState(prev => ({ ...prev, items: res.notifications, isLoading: false }));
         }
-      } catch (err) {
-        console.error('[DEBUG_NOTIF] REST Error:', err);
+      } catch {
         setState(prev => ({ ...prev, isLoading: false }));
       }
     };
@@ -85,8 +84,7 @@ export function useNotifications() {
           isLoading: false
         };
       });
-    }, (error) => {
-      console.error("[DEBUG_NOTIF] Snapshot Error:", error);
+    }, () => {
       setState(prev => ({ ...prev, isLoading: false }));
     });
 
