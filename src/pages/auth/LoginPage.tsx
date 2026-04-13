@@ -5,7 +5,7 @@ import { PATH } from '../../router/Path';
 import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
-  const { loginWithGoogle, isAuthenticated, user } = useAuth();
+  const { loginWithGoogle, loginWithEmail, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -84,6 +84,31 @@ export default function LoginPage() {
             </>
           )}
         </button>
+
+        {/* Test Accounts Logic */}
+        <div className="flex gap-2 px-1">
+           <button 
+            type="button"
+            onClick={() => loginWithEmail('teacher@test.com', 'test1234!')}
+            className="flex-1 py-3 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold transition-all hover:bg-blue-100 active:scale-95"
+           >
+             교사 체험
+           </button>
+           <button 
+            type="button"
+            onClick={() => loginWithEmail('parent1@test.com', 'test1234!')}
+            className="flex-1 py-3 bg-amber-50 text-amber-600 rounded-xl text-xs font-bold transition-all hover:bg-amber-100 active:scale-95"
+           >
+             학부모A 체험
+           </button>
+           <button 
+            type="button"
+            onClick={() => loginWithEmail('parent2@test.com', 'test1234!')}
+            className="flex-1 py-3 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-bold transition-all hover:bg-indigo-100 active:scale-95"
+           >
+             학부모B 체험
+           </button>
+        </div>
 
         <p className="text-[11.5px] text-slate-400 text-center whitespace-nowrap px-2">
           {"로그인 시 아이노트의 "}
