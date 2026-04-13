@@ -1,6 +1,21 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAppData } from '../../hooks';
-import { BookOpen, Calendar, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
+import { 
+  BookOpen, 
+  Calendar, 
+  ChevronRight, 
+  ChevronLeft, 
+  Sparkles, 
+  Sprout, 
+  Activity, 
+  MessageCircle, 
+  Users, 
+  Palette, 
+  Search, 
+  ClipboardList, 
+  Lightbulb, 
+  Inbox 
+} from 'lucide-react';
 
 export default function ParentObservationPage() {
   const { children, monthlyReports, fetchMonthlyReports } = useAppData();
@@ -37,13 +52,13 @@ export default function ParentObservationPage() {
 
   const nuriDomains = ['신체운동·건강', '의사소통', '사회관계', '예술경험', '자연탐구'];
 
-  // 누리과정 영역별 이모지
-  const domainEmoji: Record<string, string> = {
-    '신체운동·건강': '🏃',
-    '의사소통': '💬',
-    '사회관계': '🤝',
-    '예술경험': '🎨',
-    '자연탐구': '🔍',
+  // 누리과정 영역별 아이콘
+  const domainIcons: Record<string, React.ReactNode> = {
+    '신체운동·건강': <Activity size={18} className="text-green-500" />,
+    '의사소통': <MessageCircle size={18} className="text-blue-500" />,
+    '사회관계': <Users size={18} className="text-indigo-500" />,
+    '예술경험': <Palette size={18} className="text-pink-500" />,
+    '자연탐구': <Search size={18} className="text-amber-500" />,
   };
 
   const monthNum = selectedMonth.split('-')[1];
@@ -53,9 +68,9 @@ export default function ParentObservationPage() {
       {/* Header */}
       <div className="mb-8 pt-4">
         <h2 className="text-3xl font-black text-slate-900 mb-1 flex items-center gap-3">
-          성장 기록 <span className="text-2xl">🌱</span>
+          성장 기록 <Sprout size={32} className="text-green-500" strokeWidth={2.5} />
         </h2>
-        <p className="text-[14px] text-slate-500 font-medium">선생님이 보내주신 평가서를 확인하세요.</p>
+        <p className="text-[14px] text-slate-500 font-medium tracking-tight">선생님이 보내주신 월간 발달 보고서를 확인하세요.</p>
       </div>
 
       {/* Month Picker */}
@@ -108,8 +123,8 @@ export default function ParentObservationPage() {
               >
                 {/* Card Header */}
                 <div className="flex items-center gap-3 px-5 pt-5 pb-4 border-b border-slate-50">
-                  <div className="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center text-[17px] shrink-0">
-                    {domainEmoji[domain] || '📌'}
+                  <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-slate-100">
+                    {domainIcons[domain] || <ClipboardList size={18} className="text-slate-400" />}
                   </div>
                   <div className="flex-1">
                     <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest block leading-none mb-0.5">
@@ -123,8 +138,8 @@ export default function ParentObservationPage() {
                 <div className="px-5 py-4 space-y-3">
                   {/* 관찰 내용 */}
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1.5">
-                      📋 관찰 내용
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                       <ClipboardList size={12} /> 관찰 내용
                     </label>
                     <p className="text-[13px] text-slate-600 leading-relaxed font-medium italic bg-slate-50 rounded-2xl px-4 py-3">
                       "{detail.content}"
@@ -133,8 +148,8 @@ export default function ParentObservationPage() {
 
                   {/* 교사 평가 */}
                   <div>
-                    <label className="text-[10px] font-black text-orange-500 uppercase tracking-wider block mb-1.5">
-                      💡 관찰 평가
+                    <label className="text-[10px] font-bold text-orange-500 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                      <Lightbulb size={12} /> 관찰 평가
                     </label>
                     <p className="text-[13px] text-slate-700 leading-relaxed font-semibold bg-orange-50/60 rounded-2xl px-4 py-3 border border-orange-100/50">
                       {detail.evaluation}
@@ -152,8 +167,10 @@ export default function ParentObservationPage() {
         </div>
       ) : (
         /* Empty State */
-        <div className="flex flex-col items-center justify-center py-20 bg-white/50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
-          <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center text-3xl mb-4">📫</div>
+        <div className="flex flex-col items-center justify-center py-24 bg-white/50 backdrop-blur-sm rounded-[2.5rem] border-2 border-dashed border-slate-100">
+          <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
+            <Inbox size={40} className="text-slate-200" />
+          </div>
           <p className="text-[15px] font-black text-slate-700 mb-2">아직 도착한 보고서가 없어요</p>
           <p className="text-[13px] text-slate-400 font-medium text-center leading-relaxed px-10">
             {monthNum}월 평가서가 선생님으로부터<br />전송되면 이곳에서 확인할 수 있어요.
